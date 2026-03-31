@@ -1,0 +1,99 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #111;
+  font-family: system-ui, sans-serif;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Stage ───────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  width: 100vw;
+  height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: outline 0.15s;
+  outline: 3px solid transparent;
+  outline-offset: -3px;
+}
+
+.stage.dragging {
+  outline-color: #6ea8fe;
+  background: rgba(110, 168, 254, 0.05);
+}
+
+.stage.has-image { cursor: grab; }
+.stage.panning   { cursor: grabbing; }
+
+/* ── Canvas ──────────────────────────────────────────── */
+
+.canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100svh;
+  object-fit: contain;
+  /* Keep pixel-perfect when CSS-scaled */
+  image-rendering: auto;
+}
+
+/* ── Clear button ────────────────────────────────────── */
+
+.clear-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s;
+}
+.clear-btn:hover { background: rgba(220, 50, 50, 0.8); }
+.clear-btn svg { width: 16px; height: 16px; }
+
+/* ── Drop placeholder ────────────────────────────────── */
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #555;
+  pointer-events: none;
+  border: 2px dashed #333;
+  border-radius: 12px;
+  margin: 32px;
+}
+
+.placeholder-icon {
+  width: 56px;
+  height: 56px;
+  opacity: 0.5;
+}
+
+.placeholder p {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
