@@ -1,5 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { useDialKit } from 'dialkit'
+import { parseGIF, decompressFrames } from 'gifuct-js'
+import { GIFEncoder, quantize, applyPalette } from 'gifenc'
 
 // ── Colour helpers ────────────────────────────────────────────────────────────
 
@@ -14,14 +16,67 @@ function getContain(imgW, imgH, ratio) {
   const [rW, rH] = ratio.split(':').map(Number)
   const tR = rW / rH, sR = imgW / imgH
   if (sR > tR) {
-    // source wider than target → pad top/bottom
     const outH = Math.round(imgW / tR)
     return [imgW, outH, 0, Math.round((outH - imgH) / 2)]
   } else {
-    // source taller than target → pad left/right
     const outW = Math.round(imgH * tR)
     return [outW, imgH, Math.round((outW - imgW) / 2), 0]
   }
+}
+
+// ── GIF frame extractor ───────────────────────────────────────────────────────
+
+async function extractGifFrames(file) {
+  const buffer = await file.arrayBuffer()
+  const gif = parseGIF(buffer)
+  const frames = decompressFrames(gif, true)
+
+  const W = gif.lsd.width
+  const H = gif.lsd.height
+
+  const composite = document.createElement('canvas')
+  composite.width = W; composite.height = H
+  const ctx = composite.getContext('2d')
+
+  const saved = document.createElement('canvas')
+  saved.width = W; saved.height = H
+
+  const result = []
+
+  for (const frame of frames) {
+    const { dims, patch, delay, disposalType } = frame
+
+    if (disposalType === 3) {
+      const sCtx = saved.getContext('2d')
+      sCtx.clearRect(0, 0, W, H)
+      sCtx.drawImage(composite, 0, 0)
+    }
+
+    const pCanvas = document.createElement('canvas')
+    pCanvas.width = dims.width; pCanvas.height = dims.height
+    pCanvas.getContext('2d').putImageData(
+      new ImageData(
+        patch instanceof Uint8ClampedArray ? patch : new Uint8ClampedArray(patch.buffer),
+        dims.width, dims.height
+      ),
+      0, 0
+    )
+    ctx.drawImage(pCanvas, dims.left, dims.top)
+
+    const snap = document.createElement('canvas')
+    snap.width = W; snap.height = H
+    snap.getContext('2d').drawImage(composite, 0, 0)
+    result.push({ canvas: snap, delay: Math.max(20, (delay || 10) * 10) })
+
+    if (disposalType === 2) {
+      ctx.clearRect(dims.left, dims.top, dims.width, dims.height)
+    } else if (disposalType === 3) {
+      ctx.clearRect(0, 0, W, H)
+      ctx.drawImage(saved, 0, 0)
+    }
+  }
+
+  return result
 }
 
 // ── Halftone renderer ─────────────────────────────────────────────────────────
@@ -33,11 +88,10 @@ function drawHalftone(canvas, img, {
   outputRatio,
   zoom, offset,
 }) {
-  const imgW = img.naturalWidth
-  const imgH = img.naturalHeight
+  const imgW = img.naturalWidth  ?? img.width
+  const imgH = img.naturalHeight ?? img.height
   const [W, H, imgX, imgY] = getContain(imgW, imgH, outputRatio)
 
-  // ── 1. Compose padded image (source centered on white canvas) ─────────────────
   const padded  = document.createElement('canvas')
   padded.width  = W; padded.height = H
   const pctx    = padded.getContext('2d')
@@ -45,7 +99,6 @@ function drawHalftone(canvas, img, {
   pctx.fillRect(0, 0, W, H)
   pctx.drawImage(img, imgX, imgY, imgW, imgH)
 
-  // ── 2. Apply zoom/pan viewport ────────────────────────────────────────────────
   const off  = document.createElement('canvas')
   off.width  = W; off.height = H
   const octx = off.getContext('2d')
@@ -60,16 +113,14 @@ function drawHalftone(canvas, img, {
 
   const { data: src } = octx.getImageData(0, 0, W, H)
 
-  // ── Geometry constants ───────────────────────────────────────────────────────
-  const cell     = Math.max(1, Math.round(dotSize))
-  const halfW    = W / 2
-  const halfH    = H / 2
-  const rad      = angle * Math.PI / 180
-  const cosA     = Math.cos(rad)
-  const sinA     = Math.sin(rad)
+  const cell    = Math.max(1, Math.round(dotSize))
+  const halfW   = W / 2
+  const halfH   = H / 2
+  const rad     = angle * Math.PI / 180
+  const cosA    = Math.cos(rad)
+  const sinA    = Math.sin(rad)
   const maxMark = cell * (0.1 + (spread / 100) * 1.9)
 
-  // ── 2. Brightness pass ───────────────────────────────────────────────────────
   const halfDiag  = Math.ceil(Math.sqrt(W * W + H * H) / 2) + cell
   const steps     = Math.ceil(halfDiag / cell)
   const gSize     = 2 * steps + 1
@@ -99,7 +150,6 @@ function drawHalftone(canvas, img, {
     }
   }
 
-  // ── 3. Render pass ───────────────────────────────────────────────────────────
   const n       = Math.max(1, Math.min(4, Math.round(colorCount)))
   const palette = [barColor, color2, color3, color4].slice(0, n).map(hexToRgb)
   const bg      = hexToRgb(bgColor)
@@ -134,14 +184,10 @@ function drawHalftone(canvas, img, {
         const h = (maxMark / 2) * t
         inside = Math.abs(lx) <= h && Math.abs(ly) <= h
       } else if (shape === 'lines') {
-        // thin vertical line, width = cell/8
         inside = Math.abs(lx) <= (cell / 8) * t
       } else {
-        // bars: continuous lines, variable width
-        // contrast controls minimum line width (thin background lines)
-        // base of 10% ensures always visible; contrast adds up to 20% more
-        const minHW  = cell * (0.02 + (contrast / 200) * 0.06)
-        const imgHW  = (maxMark / 2) * t
+        const minHW = cell * (0.02 + (contrast / 200) * 0.06)
+        const imgHW = (maxMark / 2) * t
         inside = Math.abs(lx) <= Math.max(minHW, imgHW)
       }
 
@@ -157,6 +203,46 @@ function drawHalftone(canvas, img, {
   ctx.putImageData(out, 0, 0)
 }
 
+// ── Draw a rendered GIF frame with live zoom/pan ──────────────────────────────
+
+function drawGifFrame(canvas, frameCanvas, zoom, offset) {
+  const W = frameCanvas.width
+  const H = frameCanvas.height
+  if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H }
+  const ctx = canvas.getContext('2d')
+  const sW = W / zoom
+  const sH = H / zoom
+  const sX = W / 2 - (W / 2 + offset.x) / zoom
+  const sY = H / 2 - (H / 2 + offset.y) / zoom
+  ctx.clearRect(0, 0, W, H)
+  ctx.drawImage(frameCanvas, sX, sY, sW, sH, 0, 0, W, H)
+}
+
+// ── GIF encoder ──────────────────────────────────────────────────────────────
+
+async function encodeGif(frames, filename) {
+  const gif = GIFEncoder()
+
+  for (const { canvas, delay } of frames) {
+    const { data, width, height } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height)
+    const palette = quantize(data, 256)
+    const index   = applyPalette(data, palette)
+    gif.writeFrame(index, width, height, {
+      palette,
+      delay: Math.round(delay / 10),  // ms → centiseconds
+    })
+  }
+
+  gif.finish()
+  const blob = new Blob([gif.bytes()], { type: 'image/gif' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.download = `${filename}.gif`
+  a.href     = url
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -165,11 +251,28 @@ export default function App() {
   const stageRef   = useRef(null)
   const dragRef    = useRef({ active: false, startX: 0, startY: 0, startOffset: { x: 0, y: 0 } })
 
-  const [hasImage,   setHasImage]   = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-  const [isPanning,  setIsPanning]  = useState(false)
-  const [zoom,       setZoom]       = useState(1)
-  const [offset,     setOffset]     = useState({ x: 0, y: 0 })
+  // GIF refs
+  const rawFramesRef      = useRef(null)  // [{ canvas, delay }] composited raw frames
+  const renderedFramesRef = useRef(null)  // [{ canvas, delay }] — array grows as frames render
+  const animRef           = useRef(null)  // rAF id
+  const animStateRef      = useRef({ frameIndex: 0, nextFrameTime: 0 })
+  const zoomRef           = useRef(1)
+  const offsetRef         = useRef({ x: 0, y: 0 })
+  const renderIdRef       = useRef(0)
+  const animateRef        = useRef(true)   // mirrors params.animate for use inside rAF
+  const isGifRef          = useRef(false)  // mirrors isGif for use inside onAction
+
+  const [hasImage,    setHasImage]    = useState(false)
+  const [isDragging,  setIsDragging]  = useState(false)
+  const [isPanning,   setIsPanning]   = useState(false)
+  const [zoom,        setZoom]        = useState(1)
+  const [offset,      setOffset]      = useState({ x: 0, y: 0 })
+  const [isGif,       setIsGif]       = useState(false)
+  useEffect(() => { isGifRef.current = isGif }, [isGif])
+  const [isRendering, setIsRendering] = useState(false)
+
+  useEffect(() => { zoomRef.current = zoom }, [zoom])
+  useEffect(() => { offsetRef.current = offset }, [offset])
 
   const params = useDialKit(
     'Halftone',
@@ -188,62 +291,188 @@ export default function App() {
       bgColor:       { type: 'color', default: '#F0F4F8' },
       bgTransparent: false,
       outputRatio:   { type: 'select', options: ['source','1:1','4:3','3:2','16:9','9:16','3:4','2:3'], default: 'source' },
+      animate:       true,
+      exportFormat:  { type: 'select', options: ['GIF', 'PNG'], default: 'GIF' },
       filename:      { type: 'text',   default: 'halftone' },
       export:        { type: 'action' },
     },
     {
       onAction: (action) => {
         if (action !== 'export') return
-        const canvas = canvasRef.current
-        if (!canvas) return
         const name = (params.filename || 'halftone').trim() || 'halftone'
-        const a = document.createElement('a')
-        a.download = `${name}.png`
-        a.href = canvas.toDataURL('image/png')
-        a.click()
+
+        if (isGifRef.current && params.exportFormat === 'GIF') {
+          const rendered = renderedFramesRef.current
+          if (!rendered || rendered.length === 0) return
+          encodeGif(rendered, name)
+        } else {
+          const canvas = canvasRef.current
+          if (!canvas) return
+          const a = document.createElement('a')
+          a.download = `${name}.png`
+          a.href = canvas.toDataURL('image/png')
+          a.click()
+        }
       },
     }
   )
 
-  // ── Redraw when params or viewport change ─────────────────────────────────────
+  // ── GIF animation loop ────────────────────────────────────────────────────────
+
+  function stopAnimation() {
+    if (animRef.current) { cancelAnimationFrame(animRef.current); animRef.current = null }
+  }
+
+  function startAnimation() {
+    stopAnimation()
+    const frames = renderedFramesRef.current
+    if (!frames || frames.length === 0) return
+
+    // Reset to start only if beginning from scratch
+    animStateRef.current = { frameIndex: 0, nextFrameTime: performance.now() + frames[0].delay }
+
+    function tick() {
+      const rendered = renderedFramesRef.current
+      if (!rendered || rendered.length === 0) return
+
+      const now   = performance.now()
+      const state = animStateRef.current
+
+      // Advance frame when its display time has elapsed
+      if (now >= state.nextFrameTime) {
+        const next = (state.frameIndex + 1) % rendered.length
+        state.nextFrameTime = now + rendered[next].delay
+        state.frameIndex = next
+      }
+
+      const frame  = rendered[state.frameIndex]
+      const canvas = canvasRef.current
+      if (canvas && frame) drawGifFrame(canvas, frame.canvas, zoomRef.current, offsetRef.current)
+
+      animRef.current = requestAnimationFrame(tick)
+    }
+
+    animRef.current = requestAnimationFrame(tick)
+  }
+
+  // ── Static image: redraw when params / viewport change ───────────────────────
   useEffect(() => {
-    if (!hasImage || !imgRef.current || !canvasRef.current) return
+    if (!hasImage || isGif || !imgRef.current || !canvasRef.current) return
     drawHalftone(canvasRef.current, imgRef.current, {
-      dotSize:       params.dotSize,
-      spread:        params.spread,
-      contrast:      params.contrast,
-      angle:         params.angle,
-      shape:         params.shape,
-      invert:        params.invert,
-      colorCount:    params.colorCount,
-      barColor:      params.barColor,
-      color2:        params.color2,
-      color3:        params.color3,
-      color4:        params.color4,
-      bgColor:       params.bgColor,
-      bgTransparent: params.bgTransparent,
-      outputRatio:   params.outputRatio,
-      zoom,
-      offset,
+      dotSize: params.dotSize, spread: params.spread,
+      contrast: params.contrast, angle: params.angle,
+      shape: params.shape, invert: params.invert,
+      colorCount: params.colorCount, barColor: params.barColor,
+      color2: params.color2, color3: params.color3, color4: params.color4,
+      bgColor: params.bgColor, bgTransparent: params.bgTransparent,
+      outputRatio: params.outputRatio,
+      zoom, offset,
     })
   }, [
-    hasImage, zoom, offset,
-    params.dotSize, params.spread,
-    params.contrast, params.angle, params.shape, params.invert,
+    hasImage, isGif, zoom, offset,
+    params.dotSize, params.spread, params.contrast, params.angle, params.shape, params.invert,
     params.colorCount, params.barColor, params.color2, params.color3, params.color4,
     params.bgColor, params.bgTransparent, params.outputRatio,
   ])
+
+  // ── GIF: re-render frames when halftone params change ────────────────────────
+  useEffect(() => {
+    if (!hasImage || !isGif) return
+    const raw = rawFramesRef.current
+    if (!raw || raw.length === 0) return
+
+    const id = ++renderIdRef.current
+    stopAnimation()
+    renderedFramesRef.current = []   // start fresh (live array, grows below)
+    setIsRendering(true)
+
+    const currentParams = {
+      dotSize: params.dotSize, spread: params.spread,
+      contrast: params.contrast, angle: params.angle,
+      shape: params.shape, invert: params.invert,
+      colorCount: params.colorCount, barColor: params.barColor,
+      color2: params.color2, color3: params.color3, color4: params.color4,
+      bgColor: params.bgColor, bgTransparent: params.bgTransparent,
+      outputRatio: params.outputRatio,
+      zoom: 1, offset: { x: 0, y: 0 },
+    }
+
+    ;(async () => {
+      const rendered = renderedFramesRef.current  // same array reference
+      let started = false
+
+      for (let i = 0; i < raw.length; i++) {
+        if (renderIdRef.current !== id) return
+
+        const { canvas: rawCanvas, delay } = raw[i]
+        const outCanvas = document.createElement('canvas')
+        drawHalftone(outCanvas, rawCanvas, currentParams)
+        rendered.push({ canvas: outCanvas, delay })
+
+        // Start playback as soon as the first frame is ready
+        if (!started) {
+          started = true
+          setIsRendering(false)
+          if (animateRef.current) startAnimation()
+          else {
+            const canvas = canvasRef.current
+            if (canvas) drawGifFrame(canvas, outCanvas, zoomRef.current, offsetRef.current)
+          }
+        }
+
+        // Yield every 4 frames to keep UI responsive
+        if (i % 4 === 3) await new Promise(r => setTimeout(r, 0))
+      }
+
+      if (renderIdRef.current !== id) return
+      // All frames ready — restart from frame 0 so the loop uses the full set
+      if (animateRef.current) startAnimation()
+    })()
+  }, [
+    hasImage, isGif,
+    params.dotSize, params.spread, params.contrast, params.angle, params.shape, params.invert,
+    params.colorCount, params.barColor, params.color2, params.color3, params.color4,
+    params.bgColor, params.bgTransparent, params.outputRatio,
+  ])
+
+  // ── GIF: handle animate toggle ────────────────────────────────────────────────
+  useEffect(() => {
+    animateRef.current = params.animate
+    if (!isGif || !hasImage) return
+    const rendered = renderedFramesRef.current
+    if (!rendered || rendered.length === 0) return
+
+    if (params.animate) {
+      startAnimation()
+    } else {
+      stopAnimation()
+      // Show current frame statically
+      const frame = rendered[animStateRef.current.frameIndex] ?? rendered[0]
+      const canvas = canvasRef.current
+      if (canvas && frame) drawGifFrame(canvas, frame.canvas, zoomRef.current, offsetRef.current)
+    }
+  }, [params.animate, isGif, hasImage])
+
+  // ── GIF paused: redraw on zoom/pan ────────────────────────────────────────────
+  useEffect(() => {
+    if (!isGif || params.animate) return
+    const rendered = renderedFramesRef.current
+    if (!rendered || rendered.length === 0) return
+    const frame = rendered[animStateRef.current.frameIndex] ?? rendered[0]
+    const canvas = canvasRef.current
+    if (canvas && frame) drawGifFrame(canvas, frame.canvas, zoom, offset)
+  }, [isGif, params.animate, zoom, offset])
 
   // ── Non-passive wheel listener (zoom centered on cursor) ──────────────────────
   useEffect(() => {
     const el = stageRef.current
     if (!el) return
     const onWheel = (e) => {
-      if (!imgRef.current) return
+      if (!hasImage) return
       e.preventDefault()
       const canvas = canvasRef.current
       if (!canvas || canvas.width === 0) return
-      const rect  = canvas.getBoundingClientRect()
+      const rect   = canvas.getBoundingClientRect()
       const mx = (e.clientX - rect.left  - rect.width  / 2) * (canvas.width  / rect.width)
       const my = (e.clientY - rect.top   - rect.height / 2) * (canvas.height / rect.height)
       const cW = canvas.width, cH = canvas.height
@@ -266,7 +495,7 @@ export default function App() {
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [])
+  }, [hasImage])
 
   // ── Pan handlers ──────────────────────────────────────────────────────────────
   function handleMouseDown(e) {
@@ -291,16 +520,33 @@ export default function App() {
 
   // ── Image load / clear ────────────────────────────────────────────────────────
   function clearImage() {
-    imgRef.current = null; setHasImage(false); setZoom(1); setOffset({ x: 0, y: 0 })
+    stopAnimation()
+    renderIdRef.current++
+    imgRef.current = null
+    rawFramesRef.current = null
+    renderedFramesRef.current = null
+    setHasImage(false); setIsGif(false); setIsRendering(false)
+    setZoom(1); setOffset({ x: 0, y: 0 })
     const canvas = canvasRef.current
     if (canvas) { canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); canvas.width = 0; canvas.height = 0 }
   }
+
   function loadFile(file) {
     if (!file || !file.type.startsWith('image/')) return
-    const url = URL.createObjectURL(file)
-    const img = new Image()
-    img.onload = () => { imgRef.current = img; URL.revokeObjectURL(url); setZoom(1); setOffset({ x: 0, y: 0 }); setHasImage(true) }
-    img.src = url
+    clearImage()
+
+    if (file.type === 'image/gif') {
+      extractGifFrames(file).then(frames => {
+        rawFramesRef.current = frames
+        setIsGif(true)
+        setHasImage(true)
+      })
+    } else {
+      const url = URL.createObjectURL(file)
+      const img = new Image()
+      img.onload = () => { imgRef.current = img; URL.revokeObjectURL(url); setZoom(1); setOffset({ x: 0, y: 0 }); setHasImage(true) }
+      img.src = url
+    }
   }
 
   const stageClass = ['stage', isDragging && 'dragging', hasImage && 'has-image', isPanning && 'panning'].filter(Boolean).join(' ')
@@ -320,6 +566,12 @@ export default function App() {
     >
       <canvas ref={canvasRef} className="canvas" />
 
+      {isRendering && (
+        <div className="rendering-overlay">
+          <span>Procesando GIF…</span>
+        </div>
+      )}
+
       {hasImage && (
         <button className="clear-btn" onClick={clearImage} title="Eliminar imagen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -336,7 +588,7 @@ export default function App() {
             <circle cx="8.5" cy="8.5" r="1.5" />
             <path d="M21 15l-5-5L5 21" />
           </svg>
-          <p>Arrastra una imagen PNG o JPG aquí</p>
+          <p>Arrastra una imagen PNG, JPG o GIF aquí</p>
         </div>
       )}
     </div>
