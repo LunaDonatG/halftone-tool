@@ -31,7 +31,7 @@ Single-page React + Vite app. Entry: `src/main.jsx` renders `<App>` directly (no
 4. Brightness pass: precompute per-cell luminance on rotated grid
 5. Render pass: per-pixel, decide inside/outside the mark
 
-**Mark size — shared by all 3 shapes** (`dots`, `squares`, `bars`):
+**Mark size — shared by all 4 shapes** (`dots`, `squares`, `diamond`, `bars`):
 ```js
 const minHW = cell * (0.02 + (contrast / 200) * 0.06)   // floor (bright areas)
 const imgHW = Math.max(minHW, (maxMark / 2) * t)          // ceiling (dark areas)
@@ -40,15 +40,15 @@ const imgHW = Math.max(minHW, (maxMark / 2) * t)          // ceiling (dark areas
 - Dark areas (t≈1): the spread-driven term dominates → spread controls
 - Bright areas (t≈0): `minHW` dominates → contrast controls, and marks never fully disappear
 
-`maxMark = cell * (0.1 + (spread / 100) * 1.9)`. `dots` uses `imgHW` as a radius, `squares` as a half-side, `bars` as a half-width (unbounded vertically — the "líneas continuas" default).
+`maxMark = cell * (0.1 + (spread / 100) * 1.9)`. `dots` uses `imgHW` as a radius, `squares` as a half-side, `diamond` as an L1-norm half-width (`|lx|+|ly| <= imgHW`, i.e. a rhombus), `bars` as a half-width (unbounded vertically — the "líneas continuas" default).
 
-A 4th shape, `lines` (visually a diamond), used to exist but was geometrically identical to `bars` minus spread/contrast support — removed rather than kept as a redundant, less-capable duplicate. A `triangle` shape was drafted in the UI at one point but never got a render branch; it was dropped rather than silently falling back to the `bars` formula.
+A different shape also called `lines` (same icon glyph as the current `diamond`) used to exist but was geometrically identical to `bars` minus spread/contrast support, so it was removed as a redundant, less-capable duplicate — then the Figma spec re-added a diamond button, this time as a genuinely distinct mark (the L1-norm formula above), not a revival of the old `lines` stripe. A `triangle` shape was also drafted in the UI at one point but never got a render branch; it was dropped rather than silently falling back to the `bars` formula.
 
 ### Controls (`dialConfig.js`)
 
 | Path | Range/type | Role |
 |---|---|---|
-| `Properties.shape` | select: `bars`/`dots`/`squares` | Mark shape |
+| `Properties.shape` | select: `bars`/`dots`/`squares`/`diamond` | Mark shape |
 | `Properties.dotSize` | 5–60 | Grid cell size (px) |
 | `Properties.angle` | 0–90 | Grid rotation in degrees |
 | `Properties.contrast` | 50–200 | Mark-size floor in bright areas (see above) |
