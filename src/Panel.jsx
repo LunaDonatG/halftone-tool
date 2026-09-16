@@ -63,11 +63,14 @@ function SegmentedToggle({ label, value, path, invert = false }) {
   )
 }
 
-function EmptySlot() {
+function ColorField({ label, value, path }) {
   return (
-    <span className="p-swatch-box p-swatch-empty">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 3v10M3 8h10"/></svg>
-    </span>
+    <div className="p-row">
+      <span className="p-label">{label}</span>
+      <div className="p-swatch-btn">
+        <input className="p-swatch-box" type="color" value={value} onChange={e => set(path, e.target.value)} />
+      </div>
+    </div>
   )
 }
 
@@ -156,33 +159,21 @@ export default function Panel({ params, onExport }) {
       </Section>
 
       <Section title="COLOR" divider>
-        <div className="p-row">
-          <span className="p-label">Main color</span>
-          <div className="p-swatch-btn">
-            <input className="p-swatch-box" type="color" value={c.barColor} onChange={e => set('Color.barColor', e.target.value)} />
-          </div>
-        </div>
+        <ColorField label="Main color" value={c.barColor} path="Color.barColor" />
 
-        <div className="p-col">
-          <span className="p-label">Add colors</span>
-          <div className="p-slot-row">
-            <div className="p-slot">
-              <input className="p-swatch-box" type="color" value={c.secondaryColor} onChange={e => set('Color.secondaryColor', e.target.value)} />
-            </div>
-            <div className="p-slot p-slot-empty"><EmptySlot /></div>
-            <div className="p-slot p-slot-empty"><EmptySlot /></div>
-            <div className="p-slot p-slot-empty"><EmptySlot /></div>
-          </div>
-        </div>
-        <Slider label="Secondary amount" value={c.secondaryAmount} min={0} max={100} path="Color.secondaryAmount" />
+        <SegmentedToggle label="Secondary color" value={c.secondaryEnabled} path="Color.secondaryEnabled" />
+        {c.secondaryEnabled && (
+          <>
+            <ColorField label="Secondary color" value={c.secondaryColor} path="Color.secondaryColor" />
+            <Slider label="Amount" value={c.secondaryAmount} min={0} max={100} path="Color.secondaryAmount" />
+          </>
+        )}
 
-        <SegmentedToggle label="Background" value={!c.bgTransparent} path="Color.bgTransparent" invert />
-        <div className="p-row">
-          <span className="p-label">Background color</span>
-          <div className="p-swatch-btn">
-            <input className="p-swatch-box" type="color" value={c.bgColor} onChange={e => set('Color.bgColor', e.target.value)} />
-          </div>
-        </div>
+        <SegmentedToggle label="Background color" value={!c.bgTransparent} path="Color.bgTransparent" invert />
+        {!c.bgTransparent && (
+          <ColorField label="Background color" value={c.bgColor} path="Color.bgColor" />
+        )}
+
         <SegmentedToggle label="Invert colors" value={c.invert} path="Color.invert" />
       </Section>
 

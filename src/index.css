@@ -285,12 +285,6 @@ body {
   gap: 12px;
 }
 
-.p-col {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 /* ── Swatches ─────────────────────────────────────────── */
 
 .p-swatch-box {
@@ -308,17 +302,6 @@ body {
 .p-swatch-box::-webkit-color-swatch { border: none; border-radius: 5px; }
 .p-swatch-box::-moz-color-swatch { border: none; border-radius: 5px; }
 
-.p-swatch-empty {
-  width: 20px; height: 20px;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-dim);
-  flex-shrink: 0;
-}
-.p-swatch-empty svg { width: 16px; height: 16px; }
-
 .p-swatch-btn {
   display: flex;
   align-items: center;
@@ -329,25 +312,6 @@ body {
   background: rgba(31,41,55,0.4);
   cursor: pointer;
   flex-shrink: 0;
-}
-
-.p-slot-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-}
-.p-slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px dashed var(--border);
-  background: rgba(31,41,55,0.4);
-  cursor: pointer;
 }
 
 /* ── Segmented toggle ─────────────────────────────────── */

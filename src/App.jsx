@@ -129,9 +129,9 @@ function drawHalftone(canvas, img, {
   }
 
   const inkRgb   = hexToRgb(barColor)
-  const secondaryRgb = hexToRgb(secondaryColor)
+  const secondaryRgb = secondaryColor ? hexToRgb(secondaryColor) : null
   const bg       = hexToRgb(bgColor)
-  const threshold = secondaryAmount / 100
+  const threshold = secondaryRgb ? secondaryAmount / 100 : 0
 
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')
@@ -250,14 +250,15 @@ export default function App() {
     barColor:      params.Color.barColor,
     bgColor:       params.Color.bgColor,
     bgTransparent: params.Color.bgTransparent,
-    secondaryColor:    params.Color.secondaryColor,
+    secondaryColor:    params.Color.secondaryEnabled ? params.Color.secondaryColor : null,
     secondaryAmount:   params.Color.secondaryAmount,
     outputRatio:   params.Output.outputRatio,
   }), [
     params.Properties.dotSize, params.Properties.spread, params.Properties.contrast,
     params.Properties.angle, params.Properties.shape,
     params.Color.invert, params.Color.barColor, params.Color.bgColor,
-    params.Color.bgTransparent, params.Color.secondaryColor, params.Color.secondaryAmount,
+    params.Color.bgTransparent, params.Color.secondaryEnabled,
+    params.Color.secondaryColor, params.Color.secondaryAmount,
     params.Output.outputRatio,
   ])
 
