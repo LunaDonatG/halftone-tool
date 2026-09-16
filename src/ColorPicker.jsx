@@ -65,7 +65,7 @@ function HueSlider({ hue, onChange }) {
   )
 }
 
-function Field({ label, value, onCommit, suffix }) {
+function Field({ value, onCommit }) {
   const [draft, setDraft] = useState(String(Math.round(value)))
   useEffect(() => { setDraft(String(Math.round(value))) }, [value])
   return (
@@ -85,6 +85,48 @@ function Field({ label, value, onCommit, suffix }) {
   )
 }
 
+function HexField({ value, onCommit }) {
+  const [draft, setDraft] = useState(value)
+  useEffect(() => { setDraft(value) }, [value])
+  const commitDraft = () => {
+    const hex = draft.startsWith('#') ? draft : `#${draft}`
+    if (/^#([0-9a-f]{6}|[0-9a-f]{3})$/i.test(hex)) {
+      const full = hex.length === 4
+        ? `#${[...hex.slice(1)].map(c => c + c).join('')}`
+        : hex
+      onCommit(full)
+    } else {
+      setDraft(value)
+    }
+  }
+  return (
+    <label className="cp-field cp-field-hex">
+      <input
+        className="cp-field-input"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commitDraft}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+      />
+    </label>
+  )
+}
+
+const MODES = ['HSL', 'RGB', 'HEX']
+
+function ModeSelect({ mode, onChange }) {
+  return (
+    <div className="cp-mode">
+      <select value={mode} onChange={e => onChange(e.target.value)}>
+        {MODES.map(m => <option key={m} value={m}>{m}</option>)}
+      </select>
+      <svg className="cp-mode-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </div>
+  )
+}
+
 function ColorSelector({ value, onChange }) {
   // HSV is kept as local state (seeded once from `value` on open) rather than
   // re-derived from the hex every render: black/white/gray have no recoverable
@@ -94,6 +136,7 @@ function ColorSelector({ value, onChange }) {
     const [r, g, b] = hexToRgb(value)
     return rgbToHsv(r, g, b)
   })
+  const [mode, setMode] = useState('HSL')
   const { h, s, v } = hsv
 
   const commit = next => {
@@ -105,22 +148,39 @@ function ColorSelector({ value, onChange }) {
     const [r, g, b] = hslToRgb(nh, ns, nl)
     commit(rgbToHsv(r, g, b))
   }
+  const setRgb = (nr, ng, nb) => commit(rgbToHsv(nr, ng, nb))
   const setHex = hex => {
     const [r, g, b] = hexToRgb(hex)
     commit(rgbToHsv(r, g, b))
   }
 
-  const hsl = rgbToHsl(...hsvToRgb(h, s, v))
+  const [rr, rg, rb] = hsvToRgb(h, s, v)
+  const hsl = rgbToHsl(rr, rg, rb)
+  const hex = rgbToHex([rr, rg, rb])
 
   return (
     <div className="cp-selector" onPointerDown={e => e.stopPropagation()}>
       <ColorArea hue={h} sat={s} val={v} onChange={(ns, nv) => setHsv(h, ns, nv)} />
       <HueSlider hue={h} onChange={nh => setHsv(nh, s, v)} />
       <div className="cp-fields">
-        <Field label="H" value={hsl.h} onCommit={n => setHsl(n, hsl.s, hsl.l)} />
-        <Field label="S" value={hsl.s} onCommit={n => setHsl(hsl.h, n, hsl.l)} />
-        <Field label="L" value={hsl.l} onCommit={n => setHsl(hsl.h, hsl.s, n)} />
-        <Field label="A" value={100} onCommit={() => {}} suffix="%" />
+        <ModeSelect mode={mode} onChange={setMode} />
+        {mode === 'HSL' && (
+          <>
+            <Field value={hsl.h} onCommit={n => setHsl(n, hsl.s, hsl.l)} />
+            <Field value={hsl.s} onCommit={n => setHsl(hsl.h, n, hsl.l)} />
+            <Field value={hsl.l} onCommit={n => setHsl(hsl.h, hsl.s, n)} />
+            <Field value={100} onCommit={() => {}} />
+          </>
+        )}
+        {mode === 'RGB' && (
+          <>
+            <Field value={rr} onCommit={n => setRgb(n, rg, rb)} />
+            <Field value={rg} onCommit={n => setRgb(rr, n, rb)} />
+            <Field value={rb} onCommit={n => setRgb(rr, rg, n)} />
+            <Field value={100} onCommit={() => {}} />
+          </>
+        )}
+        {mode === 'HEX' && <HexField value={hex} onCommit={setHex} />}
       </div>
       <div className="cp-presets">
         {PRESETS.map(p => (
