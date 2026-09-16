@@ -104,7 +104,6 @@ function ActionButton({ label, onClick }) {
 const SHAPES = [
   { id: 'dots',    icon: <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="4"/></svg> },
   { id: 'squares', icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8"/></svg> },
-  { id: 'lines',   icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8" transform="rotate(45 8 8)"/></svg> },
   { id: 'bars',    icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="6.5" width="10" height="3" rx="1"/></svg> },
 ]
 

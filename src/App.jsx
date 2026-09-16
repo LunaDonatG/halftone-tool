@@ -152,19 +152,16 @@ function drawHalftone(canvas, img, {
         ? luminance[ri * gSize + ci] : 0.5
       const t = invert ? bright : 1 - bright
 
+      const minHW = cell * (0.02 + (contrast / 200) * 0.06)
+      const imgHW = Math.max(minHW, (maxMark / 2) * t)
+
       let inside = false
       if (shape === 'dots') {
-        const maxR = (maxMark / 2) * t
-        inside = lx * lx + ly * ly <= maxR * maxR
+        inside = lx * lx + ly * ly <= imgHW * imgHW
       } else if (shape === 'squares') {
-        const h = (maxMark / 2) * t
-        inside = Math.abs(lx) <= h && Math.abs(ly) <= h
-      } else if (shape === 'lines') {
-        inside = Math.abs(lx) <= (cell / 8) * t
+        inside = Math.abs(lx) <= imgHW && Math.abs(ly) <= imgHW
       } else {
-        const minHW = cell * (0.02 + (contrast / 200) * 0.06)
-        const imgHW = (maxMark / 2) * t
-        inside = Math.abs(lx) <= Math.max(minHW, imgHW)
+        inside = Math.abs(lx) <= imgHW
       }
 
       const oi = (y * W + x) * 4
