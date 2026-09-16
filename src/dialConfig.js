@@ -10,6 +10,7 @@ export const DIAL_CONFIG = {
   },
   Color: {
     barColor:        { type: 'color', default: '#000000' },
+    barColorSet:     false,
     secondaryEnabled: false,
     secondaryColor:   { type: 'color', default: '#2563eb' },
     secondaryAmount:  [0, 0, 100, 1],

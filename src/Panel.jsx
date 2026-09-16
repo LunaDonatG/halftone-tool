@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DialStore } from 'dialkit'
 import { PANEL_ID } from './dialConfig.js'
+import { ColorPickerField } from './ColorPicker.jsx'
 
 const set = (path, value) => {
   const panel = DialStore.getPanels().find(p => p.name === PANEL_ID)
@@ -63,17 +64,6 @@ function SegmentedToggle({ label, value, path, invert = false }) {
   )
 }
 
-function ColorField({ label, value, path }) {
-  return (
-    <div className="p-row">
-      <span className="p-label">{label}</span>
-      <div className="p-swatch-btn">
-        <input className="p-swatch-box" type="color" value={value} onChange={e => set(path, e.target.value)} />
-      </div>
-    </div>
-  )
-}
-
 function Select({ label, value, options, path }) {
   return (
     <div className="p-row">
@@ -124,6 +114,7 @@ export default function Panel({ params, onExport }) {
   const p = params.Properties
   const c = params.Color
   const o = params.Output
+  const [openField, setOpenField] = useState(null)
 
   return (
     <aside className="panel">
@@ -159,19 +150,34 @@ export default function Panel({ params, onExport }) {
       </Section>
 
       <Section title="COLOR" divider>
-        <ColorField label="Main color" value={c.barColor} path="Color.barColor" />
+        <ColorPickerField
+          label="Main color" value={c.barColor} chosen={c.barColorSet}
+          isOpen={openField === 'barColor'}
+          onOpen={() => setOpenField('barColor')} onClose={() => setOpenField(null)}
+          onChange={hex => { set('Color.barColor', hex); set('Color.barColorSet', true) }}
+        />
 
         <SegmentedToggle label="Secondary color" value={c.secondaryEnabled} path="Color.secondaryEnabled" />
         {c.secondaryEnabled && (
           <>
-            <ColorField label="Secondary color" value={c.secondaryColor} path="Color.secondaryColor" />
+            <ColorPickerField
+              label="Secondary color" value={c.secondaryColor} chosen
+              isOpen={openField === 'secondaryColor'}
+              onOpen={() => setOpenField('secondaryColor')} onClose={() => setOpenField(null)}
+              onChange={hex => set('Color.secondaryColor', hex)}
+            />
             <Slider label="Amount" value={c.secondaryAmount} min={0} max={100} path="Color.secondaryAmount" />
           </>
         )}
 
         <SegmentedToggle label="Background color" value={!c.bgTransparent} path="Color.bgTransparent" invert />
         {!c.bgTransparent && (
-          <ColorField label="Background color" value={c.bgColor} path="Color.bgColor" />
+          <ColorPickerField
+            label="Background color" value={c.bgColor} chosen
+            isOpen={openField === 'bgColor'}
+            onOpen={() => setOpenField('bgColor')} onClose={() => setOpenField(null)}
+            onChange={hex => set('Color.bgColor', hex)}
+          />
         )}
 
         <SegmentedToggle label="Invert colors" value={c.invert} path="Color.invert" />
