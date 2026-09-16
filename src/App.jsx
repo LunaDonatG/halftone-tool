@@ -207,49 +207,6 @@ async function encodeGif(frames, filename) {
   URL.revokeObjectURL(url)
 }
 
-// ── Shape icons ────────────────────────────────────────────────────────────────
-
-const SHAPES = [
-  {
-    id: 'dots',
-    icon: <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="4.5"/></svg>,
-  },
-  {
-    id: 'squares',
-    icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg>,
-  },
-  {
-    id: 'lines',
-    icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2L14 8L8 14L2 8Z"/></svg>,
-  },
-  {
-    id: 'bars',
-    icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="6.5" width="12" height="3" rx="1.5"/></svg>,
-  },
-]
-
-// ── Custom slider ──────────────────────────────────────────────────────────────
-
-function PropSlider({ label, value, min, max, step = 1, onChange }) {
-  const pct = ((value - min) / (max - min)) * 100
-  return (
-    <div className="prop-row">
-      <div className="prop-row-header">
-        <span className="prop-label">{label}</span>
-        <span className="prop-value">{value}</span>
-      </div>
-      <input
-        type="range"
-        className="prop-slider"
-        min={min} max={max} step={step}
-        value={value}
-        style={{ '--pct': `${pct}%` }}
-        onChange={e => onChange(Number(e.target.value))}
-      />
-    </div>
-  )
-}
-
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function App() {
