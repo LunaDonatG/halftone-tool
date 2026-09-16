@@ -112,7 +112,6 @@ const SHAPES = [
   { id: 'dots',    icon: <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="4"/></svg> },
   { id: 'squares', icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8"/></svg> },
   { id: 'lines',   icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8" transform="rotate(45 8 8)"/></svg> },
-  { id: 'triangle', icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3.5L13 12.5H3Z"/></svg> },
   { id: 'bars',    icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="6.5" width="10" height="3" rx="1"/></svg> },
 ]
 
@@ -175,6 +174,7 @@ export default function Panel({ params, onExport }) {
             <div className="p-slot p-slot-empty"><EmptySlot /></div>
           </div>
         </div>
+        <Slider label="Third amount" value={c.thirdAmount} min={0} max={100} path="Color.thirdAmount" />
 
         <SegmentedToggle label="Background" value={!c.bgTransparent} path="Color.bgTransparent" invert />
         <div className="p-row">
