@@ -2,19 +2,21 @@
 
 :root {
   --bg:           #0d1117;
-  --sidebar-bg:   #0f1923;
-  --border:       #1a2535;
+  --sidebar-bg:   #0a1021;
+  --border:       #1f2937;
   --text:         #c4d0e3;
   --text-dim:     #4a6080;
   --text-bright:  #e2e8f0;
   --accent:       #2563eb;
-  --sidebar-w:    248px;
+  --sidebar-w:    287px;
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Geist', system-ui, sans-serif;
 }
 
 body {
   margin: 0;
   background: var(--bg);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
   color: var(--text);
 }
 
@@ -104,7 +106,7 @@ body {
    ════════════════════════════════════════════════════════ */
 
 .panel {
-  width: 248px;
+  width: var(--sidebar-w);
   flex-shrink: 0;
   height: 100svh;
   background: var(--sidebar-bg);
@@ -114,56 +116,80 @@ body {
   scrollbar-width: none;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  padding: 16px;
 }
 .panel::-webkit-scrollbar { display: none; }
+
+/* ── Header ───────────────────────────────────────────── */
+
+.p-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.p-header-title {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #fff;
+}
+.p-header-icon { width: 24px; height: 24px; color: var(--text); }
 
 /* ── Section ──────────────────────────────────────────── */
 
 .p-section {
-  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
+.p-section-divider { border-top: 1px solid var(--border); padding-top: 16px; }
 
 .p-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 14px 16px;
+  padding: 0;
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-bright);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.1em;
 }
 .p-section-header:hover { color: #fff; }
 
 .p-chevron {
-  width: 14px; height: 14px;
-  color: var(--text-dim);
+  width: 16px; height: 16px;
+  color: var(--text);
   transition: transform 0.2s;
   flex-shrink: 0;
 }
 .p-chevron.open { transform: rotate(180deg); }
 
 .p-section-body {
-  padding: 8px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 /* ── Labels ───────────────────────────────────────────── */
 
 .p-label {
-  font-size: 13px;
-  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: #fff;
 }
 
 .p-value {
-  font-size: 13px;
-  color: var(--text-bright);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: #fff;
   font-variant-numeric: tabular-nums;
 }
 
@@ -171,27 +197,27 @@ body {
 
 .p-shape-btns {
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 4px;
 }
 
 .p-shape-btn {
   flex: 1;
-  aspect-ratio: 1;
+  height: 40px;
   border-radius: 8px;
-  border: 1.5px solid transparent;
-  background: rgba(255,255,255,0.04);
-  color: var(--text-dim);
+  border: 1px solid transparent;
+  background: rgba(31,41,55,0.4);
+  color: #d9d9d9;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
-.p-shape-btn svg { width: 14px; height: 14px; }
-.p-shape-btn:hover { color: var(--text); border-color: var(--border); }
-.p-shape-btn.active { border-color: var(--text-bright); color: var(--text-bright); }
+.p-shape-btn svg { width: 8px; height: 8px; }
+.p-shape-btn:hover { border-color: var(--border); }
+.p-shape-btn.active { background: #1f2937; border-color: #cbd5e1; color: #fff; }
 
 /* ── Slider ───────────────────────────────────────────── */
 
@@ -199,6 +225,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 8px 0;
 }
 
 .p-slider-header {
@@ -211,39 +238,41 @@ body {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 3px;
-  border-radius: 2px;
+  height: 10px;
+  border-radius: 8px;
   outline: none;
   cursor: pointer;
   background: linear-gradient(
     to right,
-    var(--text-bright) 0%,
-    var(--text-bright) var(--pct),
-    rgba(255,255,255,0.1) var(--pct),
-    rgba(255,255,255,0.1) 100%
+    rgba(203,213,225,0.5) 0%,
+    rgba(203,213,225,0.5) var(--pct),
+    rgba(31,41,55,0.7) var(--pct),
+    rgba(31,41,55,0.7) 100%
   );
+  background-size: 100% 4px;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .p-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  background: var(--text-bright);
+  width: 16px;
+  height: 10px;
+  border-radius: 2px;
+  background: #fff;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 
 .p-slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
+  width: 16px;
+  height: 10px;
+  border-radius: 2px;
   border: none;
-  background: var(--text-bright);
+  background: #fff;
   cursor: pointer;
 }
 
-/* ── Generic row (toggle, color, select, text) ────────── */
+/* ── Generic row / column ─────────────────────────────── */
 
 .p-row {
   display: flex;
@@ -252,101 +281,168 @@ body {
   gap: 12px;
 }
 
-/* ── Toggle ───────────────────────────────────────────── */
-
-.p-toggle {
-  position: relative;
-  width: 40px; height: 22px;
-  border-radius: 11px;
-  border: none;
-  background: rgba(255,255,255,0.1);
-  cursor: pointer;
-  padding: 0;
-  flex-shrink: 0;
-  transition: background 0.2s;
+.p-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.p-toggle.on { background: var(--accent); }
-.p-toggle-thumb {
-  position: absolute;
-  top: 3px; left: 3px;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  display: block;
-  transition: transform 0.2s;
-}
-.p-toggle.on .p-toggle-thumb { transform: translateX(18px); }
 
-/* ── Color swatch ─────────────────────────────────────── */
+/* ── Swatches ─────────────────────────────────────────── */
 
-.p-color-swatch {
-  width: 80px; height: 28px;
+.p-swatch-box {
+  width: 20px; height: 20px;
   border-radius: 5px;
-  border: 1.5px solid rgba(255,255,255,0.1);
+  border: none;
+  padding: 0;
   cursor: pointer;
-  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
   flex-shrink: 0;
-  display: block;
 }
-.p-color-swatch input[type="color"] {
-  width: 200%; height: 200%;
-  border: none; padding: 0;
-  opacity: 0;
-  position: relative; top: -50%; left: -50%;
+.p-swatch-box::-webkit-color-swatch-wrapper { padding: 0; }
+.p-swatch-box::-webkit-color-swatch { border: none; border-radius: 5px; }
+.p-swatch-box::-moz-color-swatch { border: none; border-radius: 5px; }
+
+.p-swatch-empty {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.p-swatch-empty svg { width: 16px; height: 16px; }
+
+.p-swatch-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90px; height: 40px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: rgba(31,41,55,0.4);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.p-slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+.p-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: rgba(31,41,55,0.4);
   cursor: pointer;
 }
 
-/* ── Select ───────────────────────────────────────────── */
+/* ── Segmented toggle ─────────────────────────────────── */
 
-.p-select-wrap {
+.p-seg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.p-segmented {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 6px;
+  background: rgba(31,41,55,0.4);
+}
+
+.p-segmented-btn {
+  width: 61px; height: 24px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+}
+.p-segmented-btn.active { background: rgba(216,223,233,0.3); }
+
+/* ── Dropdown ─────────────────────────────────────────── */
+
+.p-dropdown {
   position: relative;
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  width: 109px; height: 40px;
+  border-radius: 8px;
+  background: rgba(31,41,55,0.4);
 }
-.p-select-wrap select {
+.p-dropdown select {
   appearance: none;
+  width: 100%; height: 100%;
   background: none;
   border: none;
-  color: var(--text-bright);
-  font-size: 13px;
-  padding-right: 18px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 0 28px 0 12px;
   cursor: pointer;
   outline: none;
 }
-.p-select-wrap select option { background: #1a2535; color: var(--text-bright); }
+.p-dropdown select option { background: #1a2535; color: #fff; }
 .p-select-chevron {
-  position: absolute; right: 0;
-  width: 13px; height: 13px;
+  position: absolute; right: 12px;
+  width: 16px; height: 16px;
   color: var(--text-dim);
   pointer-events: none;
 }
 
-/* ── Text input ───────────────────────────────────────── */
+/* ── Text input row ───────────────────────────────────── */
+
+.p-text-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: rgba(31,41,55,0.4);
+}
 
 .p-text {
   flex: 1; min-width: 0;
   background: none;
   border: none;
-  color: var(--text-bright);
-  font-size: 13px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12px;
   text-align: right;
   padding: 0;
   outline: none;
 }
-.p-text::placeholder { color: var(--text-dim); }
+.p-text::placeholder { color: #fff; opacity: 1; }
 
 /* ── Action button ────────────────────────────────────── */
 
 .p-action-btn {
   width: 100%;
-  height: 38px;
-  border-radius: 6px;
+  padding: 14px 0;
+  border-radius: 8px;
   border: none;
-  background: rgba(255,255,255,0.05);
-  color: var(--text-bright);
-  font-size: 13px;
+  background: rgba(216,223,233,0.3);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12px;
   cursor: pointer;
   transition: background 0.15s;
 }
-.p-action-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.p-action-btn:hover { background: rgba(216,223,233,0.4); }

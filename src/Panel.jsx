@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { DialStore } from 'dialkit'
 import { PANEL_ID } from './dialConfig.js'
 
@@ -9,10 +9,10 @@ const set = (path, value) => {
 
 // ── Primitives ────────────────────────────────────────────────────────────────
 
-function Section({ title, children }) {
+function Section({ title, children, divider = false }) {
   const [open, setOpen] = useState(true)
   return (
-    <div className="p-section">
+    <div className={`p-section${divider ? ' p-section-divider' : ''}`}>
       <button className="p-section-header" onClick={() => setOpen(v => !v)}>
         <span>{title}</span>
         <svg className={`p-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -44,36 +44,30 @@ function Slider({ label, value, min, max, step = 1, path }) {
   )
 }
 
-function Toggle({ label, value, path }) {
+function SegmentedToggle({ label, value, path, invert = false }) {
+  const write = on => set(path, invert ? !on : on)
   return (
-    <div className="p-row">
+    <div className="p-seg-row">
       <span className="p-label">{label}</span>
-      <button
-        className={`p-toggle${value ? ' on' : ''}`}
-        onClick={() => set(path, !value)}
-        role="switch"
-        aria-checked={value}
-      >
-        <span className="p-toggle-thumb" />
-      </button>
+      <div className="p-segmented" role="radiogroup" aria-label={label}>
+        <button
+          className={`p-segmented-btn${!value ? ' active' : ''}`}
+          onClick={() => write(false)}
+        >Off</button>
+        <button
+          className={`p-segmented-btn${value ? ' active' : ''}`}
+          onClick={() => write(true)}
+        >On</button>
+      </div>
     </div>
   )
 }
 
-function ColorSwatch({ label, value, path }) {
-  const inputRef = useRef(null)
+function EmptySlot() {
   return (
-    <div className="p-row">
-      <span className="p-label">{label}</span>
-      <label className="p-color-swatch" style={{ background: value }}>
-        <input
-          ref={inputRef}
-          type="color"
-          value={value}
-          onChange={e => set(path, e.target.value)}
-        />
-      </label>
-    </div>
+    <span className="p-swatch-box p-swatch-empty">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 3v10M3 8h10"/></svg>
+    </span>
   )
 }
 
@@ -81,7 +75,7 @@ function Select({ label, value, options, path }) {
   return (
     <div className="p-row">
       <span className="p-label">{label}</span>
-      <div className="p-select-wrap">
+      <div className="p-dropdown">
         <select value={value} onChange={e => set(path, e.target.value)}>
           {options.map(o => <option key={o} value={o}>{o}</option>)}
         </select>
@@ -95,7 +89,7 @@ function Select({ label, value, options, path }) {
 
 function TextInput({ label, value, path, placeholder }) {
   return (
-    <div className="p-row">
+    <div className="p-text-row">
       <span className="p-label">{label}</span>
       <input
         type="text"
@@ -115,10 +109,11 @@ function ActionButton({ label, onClick }) {
 }
 
 const SHAPES = [
-  { id: 'dots',    icon: <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="4.5"/></svg> },
-  { id: 'squares', icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg> },
-  { id: 'lines',   icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2L14 8L8 14L2 8Z"/></svg> },
-  { id: 'bars',    icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="6.5" width="12" height="3" rx="1.5"/></svg> },
+  { id: 'dots',    icon: <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="4"/></svg> },
+  { id: 'squares', icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8"/></svg> },
+  { id: 'lines',   icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8" transform="rotate(45 8 8)"/></svg> },
+  { id: 'triangle', icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3.5L13 12.5H3Z"/></svg> },
+  { id: 'bars',    icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="6.5" width="10" height="3" rx="1"/></svg> },
 ]
 
 // ── Panel ─────────────────────────────────────────────────────────────────────
@@ -130,9 +125,16 @@ export default function Panel({ params, onExport }) {
 
   return (
     <aside className="panel">
+      <div className="p-header">
+        <span className="p-header-title">HALFTONE</span>
+        <svg className="p-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
+          <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+          <line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
 
       <Section title="PROPERTIES">
-        {/* Shape */}
         <div className="p-slider-row">
           <span className="p-label">Shape</span>
           <div className="p-shape-btns">
@@ -154,22 +156,42 @@ export default function Panel({ params, onExport }) {
         <Slider label="Spread"   value={p.spread}   min={0}  max={100} path="Properties.spread" />
       </Section>
 
-      <Section title="COLOR">
-        <ColorSwatch label="Ink color"   value={c.barColor}   path="Color.barColor" />
-        <ColorSwatch label="Background"  value={c.bgColor}    path="Color.bgColor" />
-        <Toggle      label="Transparent" value={c.bgTransparent} path="Color.bgTransparent" />
-        <Toggle      label="Invert"      value={c.invert}     path="Color.invert" />
-        <ColorSwatch label="Third color" value={c.thirdColor} path="Color.thirdColor" />
-        <Slider      label="Third amount" value={c.thirdAmount} min={0} max={100} path="Color.thirdAmount" />
+      <Section title="COLOR" divider>
+        <div className="p-row">
+          <span className="p-label">Main color</span>
+          <div className="p-swatch-btn">
+            <input className="p-swatch-box" type="color" value={c.barColor} onChange={e => set('Color.barColor', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="p-col">
+          <span className="p-label">Add colors</span>
+          <div className="p-slot-row">
+            <div className="p-slot">
+              <input className="p-swatch-box" type="color" value={c.thirdColor} onChange={e => set('Color.thirdColor', e.target.value)} />
+            </div>
+            <div className="p-slot p-slot-empty"><EmptySlot /></div>
+            <div className="p-slot p-slot-empty"><EmptySlot /></div>
+            <div className="p-slot p-slot-empty"><EmptySlot /></div>
+          </div>
+        </div>
+
+        <SegmentedToggle label="Background" value={!c.bgTransparent} path="Color.bgTransparent" invert />
+        <div className="p-row">
+          <span className="p-label">Background color</span>
+          <div className="p-swatch-btn">
+            <input className="p-swatch-box" type="color" value={c.bgColor} onChange={e => set('Color.bgColor', e.target.value)} />
+          </div>
+        </div>
+        <SegmentedToggle label="Invert colors" value={c.invert} path="Color.invert" />
       </Section>
 
-      <Section title="OUTPUT">
-        <Select    label="Aspect Ratio" value={o.outputRatio}  options={['source','1:1','4:3','3:2','16:9','9:16','3:4','2:3']} path="Output.outputRatio" />
-        <Select    label="Export as"    value={o.exportFormat} options={['GIF','PNG']} path="Output.exportFormat" />
-        <TextInput label="Filename"     value={o.filename}     path="Output.filename" placeholder="halftone" />
+      <Section title="EXPORT" divider>
+        <Select label="Aspect"    value={o.outputRatio}  options={['source','1:1','4:3','3:2','16:9','9:16','3:4','2:3']} path="Output.outputRatio" />
+        <Select label="File type" value={o.exportFormat} options={['GIF','PNG']} path="Output.exportFormat" />
+        <TextInput label="Filename" value={o.filename} path="Output.filename" placeholder="name" />
         <ActionButton label="Export" onClick={onExport} />
       </Section>
-
     </aside>
   )
 }
