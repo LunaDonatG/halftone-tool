@@ -35,6 +35,36 @@ function ColorArea({ hue, sat, val, onChange }) {
   )
 }
 
+function HueSlider({ hue, onChange }) {
+  const trackRef = useRef(null)
+
+  const setFromEvent = e => {
+    const rect = trackRef.current.getBoundingClientRect()
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    onChange(x * 360)
+  }
+
+  const handlePointerDown = e => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setFromEvent(e)
+  }
+  const handlePointerMove = e => {
+    if (e.buttons !== 1) return
+    setFromEvent(e)
+  }
+
+  return (
+    <div
+      ref={trackRef}
+      className="cp-hue"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+    >
+      <div className="cp-hue-cursor" style={{ left: `${(hue / 360) * 100}%` }} />
+    </div>
+  )
+}
+
 function Field({ label, value, onCommit, suffix }) {
   const [draft, setDraft] = useState(String(Math.round(value)))
   useEffect(() => { setDraft(String(Math.round(value))) }, [value])
@@ -56,16 +86,36 @@ function Field({ label, value, onCommit, suffix }) {
 }
 
 function ColorSelector({ value, onChange }) {
-  const [r, g, b] = hexToRgb(value)
-  const { h, s, v } = rgbToHsv(r, g, b)
-  const hsl = rgbToHsl(r, g, b)
+  // HSV is kept as local state (seeded once from `value` on open) rather than
+  // re-derived from the hex every render: black/white/gray have no recoverable
+  // hue or saturation, so re-deriving would snap the hue slider back on every
+  // change once the color goes achromatic.
+  const [hsv, setHsvState] = useState(() => {
+    const [r, g, b] = hexToRgb(value)
+    return rgbToHsv(r, g, b)
+  })
+  const { h, s, v } = hsv
 
-  const setHsv = (nh, ns, nv) => onChange(rgbToHex(hsvToRgb(nh, ns, nv)))
-  const setHsl = (nh, ns, nl) => onChange(rgbToHex(hslToRgb(nh, ns, nl)))
+  const commit = next => {
+    setHsvState(next)
+    onChange(rgbToHex(hsvToRgb(next.h, next.s, next.v)))
+  }
+  const setHsv = (nh, ns, nv) => commit({ h: nh, s: ns, v: nv })
+  const setHsl = (nh, ns, nl) => {
+    const [r, g, b] = hslToRgb(nh, ns, nl)
+    commit(rgbToHsv(r, g, b))
+  }
+  const setHex = hex => {
+    const [r, g, b] = hexToRgb(hex)
+    commit(rgbToHsv(r, g, b))
+  }
+
+  const hsl = rgbToHsl(...hsvToRgb(h, s, v))
 
   return (
     <div className="cp-selector" onPointerDown={e => e.stopPropagation()}>
       <ColorArea hue={h} sat={s} val={v} onChange={(ns, nv) => setHsv(h, ns, nv)} />
+      <HueSlider hue={h} onChange={nh => setHsv(nh, s, v)} />
       <div className="cp-fields">
         <Field label="H" value={hsl.h} onCommit={n => setHsl(n, hsl.s, hsl.l)} />
         <Field label="S" value={hsl.s} onCommit={n => setHsl(hsl.h, n, hsl.l)} />
@@ -78,7 +128,7 @@ function ColorSelector({ value, onChange }) {
             key={p}
             className={`cp-preset${p.toLowerCase() === value.toLowerCase() ? ' active' : ''}`}
             style={{ background: p }}
-            onClick={() => onChange(p)}
+            onClick={() => setHex(p)}
           />
         ))}
       </div>
