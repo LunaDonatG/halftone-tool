@@ -169,7 +169,6 @@ function ColorSelector({ value, onChange }) {
             <Field value={hsl.h} onCommit={n => setHsl(n, hsl.s, hsl.l)} />
             <Field value={hsl.s} onCommit={n => setHsl(hsl.h, n, hsl.l)} />
             <Field value={hsl.l} onCommit={n => setHsl(hsl.h, hsl.s, n)} />
-            <Field value={100} onCommit={() => {}} />
           </>
         )}
         {mode === 'RGB' && (
