@@ -219,7 +219,7 @@ body {
   padding: 0;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
-.p-shape-btn svg { width: 8px; height: 8px; }
+.p-shape-btn svg { width: 16px; height: 16px; }
 .p-shape-btn:hover { border-color: var(--border); }
 .p-shape-btn.active { background: #1f2937; border-color: #cbd5e1; color: #fff; }
 
