@@ -167,14 +167,14 @@ export default function Panel({ params, onExport }) {
           <span className="p-label">Add colors</span>
           <div className="p-slot-row">
             <div className="p-slot">
-              <input className="p-swatch-box" type="color" value={c.thirdColor} onChange={e => set('Color.thirdColor', e.target.value)} />
+              <input className="p-swatch-box" type="color" value={c.secondaryColor} onChange={e => set('Color.secondaryColor', e.target.value)} />
             </div>
             <div className="p-slot p-slot-empty"><EmptySlot /></div>
             <div className="p-slot p-slot-empty"><EmptySlot /></div>
             <div className="p-slot p-slot-empty"><EmptySlot /></div>
           </div>
         </div>
-        <Slider label="Third amount" value={c.thirdAmount} min={0} max={100} path="Color.thirdAmount" />
+        <Slider label="Secondary amount" value={c.secondaryAmount} min={0} max={100} path="Color.secondaryAmount" />
 
         <SegmentedToggle label="Background" value={!c.bgTransparent} path="Color.bgTransparent" invert />
         <div className="p-row">

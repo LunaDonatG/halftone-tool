@@ -13,8 +13,8 @@ export const DIAL_CONFIG = {
     bgColor:       { type: 'color', default: '#F0F4F8' },
     bgTransparent: false,
     invert:        false,
-    thirdColor:    { type: 'color', default: '#2563eb' },
-    thirdAmount:   [0, 0, 100, 1],
+    secondaryColor:    { type: 'color', default: '#2563eb' },
+    secondaryAmount:   [0, 0, 100, 1],
   },
   Output: {
     outputRatio:  { type: 'select', options: ['source','1:1','4:3','3:2','16:9','9:16','3:4','2:3'], default: 'source' },

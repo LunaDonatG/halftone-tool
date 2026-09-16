@@ -70,7 +70,7 @@ async function extractGifFrames(file) {
 
 function drawHalftone(canvas, img, {
   dotSize, spread, contrast, angle, shape, invert,
-  barColor, bgColor, bgTransparent, thirdColor, thirdAmount,
+  barColor, bgColor, bgTransparent, secondaryColor, secondaryAmount,
   outputRatio, zoom, offset,
 }) {
   const imgW = img.naturalWidth  ?? img.width
@@ -129,9 +129,9 @@ function drawHalftone(canvas, img, {
   }
 
   const inkRgb   = hexToRgb(barColor)
-  const thirdRgb = hexToRgb(thirdColor)
+  const secondaryRgb = hexToRgb(secondaryColor)
   const bg       = hexToRgb(bgColor)
-  const threshold = thirdAmount / 100
+  const threshold = secondaryAmount / 100
 
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')
@@ -169,7 +169,7 @@ function drawHalftone(canvas, img, {
 
       const oi = (y * W + x) * 4
       const color = inside
-        ? (threshold > 0 && t < threshold ? thirdRgb : inkRgb)
+        ? (threshold > 0 && t < threshold ? secondaryRgb : inkRgb)
         : bg
       dst[oi]     = color[0]
       dst[oi + 1] = color[1]
@@ -250,14 +250,14 @@ export default function App() {
     barColor:      params.Color.barColor,
     bgColor:       params.Color.bgColor,
     bgTransparent: params.Color.bgTransparent,
-    thirdColor:    params.Color.thirdColor,
-    thirdAmount:   params.Color.thirdAmount,
+    secondaryColor:    params.Color.secondaryColor,
+    secondaryAmount:   params.Color.secondaryAmount,
     outputRatio:   params.Output.outputRatio,
   }), [
     params.Properties.dotSize, params.Properties.spread, params.Properties.contrast,
     params.Properties.angle, params.Properties.shape,
     params.Color.invert, params.Color.barColor, params.Color.bgColor,
-    params.Color.bgTransparent, params.Color.thirdColor, params.Color.thirdAmount,
+    params.Color.bgTransparent, params.Color.secondaryColor, params.Color.secondaryAmount,
     params.Output.outputRatio,
   ])
 
