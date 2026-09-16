@@ -160,6 +160,8 @@ function drawHalftone(canvas, img, {
         inside = lx * lx + ly * ly <= imgHW * imgHW
       } else if (shape === 'squares') {
         inside = Math.abs(lx) <= imgHW && Math.abs(ly) <= imgHW
+      } else if (shape === 'diamond') {
+        inside = Math.abs(lx) + Math.abs(ly) <= imgHW
       } else {
         inside = Math.abs(lx) <= imgHW
       }

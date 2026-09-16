@@ -2,7 +2,7 @@ export const PANEL_ID = 'Halftone'
 
 export const DIAL_CONFIG = {
   Properties: {
-    shape:    { type: 'select', options: ['bars', 'dots', 'squares'], default: 'bars' },
+    shape:    { type: 'select', options: ['bars', 'dots', 'squares', 'diamond'], default: 'bars' },
     dotSize:  [10,  5,   60,  1],
     angle:    [0,   0,   90,  1],
     contrast: [100, 50, 200,  1],
