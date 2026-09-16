@@ -1,7 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  --bg:           #0d1117;
+  --bg:           #0b1220;
   --sidebar-bg:   #0a1021;
   --border:       #1f2937;
   --text:         #c4d0e3;
@@ -26,6 +26,9 @@ body {
   display: flex;
   width: 100vw;
   height: 100svh;
+  box-sizing: border-box;
+  padding: 32px;
+  gap: 24px;
   overflow: hidden;
 }
 
@@ -35,18 +38,20 @@ body {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 100svh;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  outline: 2px solid transparent;
-  outline-offset: -2px;
-  transition: outline-color 0.15s;
+  background: rgba(100,116,139,0.07);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  transition: border-color 0.15s, background 0.15s;
+  overflow: hidden;
 }
 
 .stage.dragging {
-  outline-color: var(--accent);
-  background: rgba(37, 99, 235, 0.04);
+  border-color: var(--accent);
+  background: rgba(37, 99, 235, 0.06);
 }
 
 .stage.has-image { cursor: grab; }
@@ -55,7 +60,7 @@ body {
 .canvas {
   display: block;
   max-width: 100%;
-  max-height: 100svh;
+  max-height: 100%;
   object-fit: contain;
 }
 
@@ -76,17 +81,13 @@ body {
 .clear-btn svg { width: 13px; height: 13px; }
 
 .placeholder {
-  position: absolute;
-  inset: 24px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 12px;
-  border: 1.5px dashed #1a2535;
-  border-radius: 10px;
   pointer-events: none;
-  color: #2a3d56;
+  color: #64748b;
 }
-.placeholder-icon { width: 52px; height: 52px; }
+.placeholder-icon { width: 144px; height: 144px; }
 .placeholder p { margin: 0; font-size: 13px; }
 
 .rendering-overlay {
@@ -108,9 +109,10 @@ body {
 .panel {
   width: var(--sidebar-w);
   flex-shrink: 0;
-  height: 100svh;
+  height: 100%;
   background: var(--sidebar-bg);
-  border-left: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
