@@ -81,6 +81,8 @@ body {
 .clear-btn svg { width: 13px; height: 13px; }
 
 .placeholder {
+  position: absolute;
+  inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 12px;
