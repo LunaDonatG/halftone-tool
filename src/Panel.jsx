@@ -129,9 +129,9 @@ function TextInput({ label, value, path, placeholder }) {
   )
 }
 
-function ActionButton({ label, onClick }) {
+function ActionButton({ label, onClick, disabled }) {
   return (
-    <button className="p-action-btn" onClick={onClick}>{label}</button>
+    <button className="p-action-btn" onClick={onClick} disabled={disabled}>{label}</button>
   )
 }
 
@@ -144,7 +144,7 @@ const SHAPES = [
 
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
-export default function Panel({ params, onExport }) {
+export default function Panel({ params, onExport, canExport }) {
   const p = params.Properties
   const c = params.Color
   const o = params.Output
@@ -233,7 +233,7 @@ export default function Panel({ params, onExport }) {
           onOpen={() => setOpenField('exportFormat')} onClose={() => setOpenField(null)}
         />
         <TextInput label="File Name" value={o.filename} path="Output.filename" placeholder="halftone" />
-        <ActionButton label="Export" onClick={onExport} />
+        <ActionButton label="Export" onClick={onExport} disabled={!canExport} />
       </Section>
     </aside>
   )

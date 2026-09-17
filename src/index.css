@@ -575,3 +575,8 @@ body {
 }
 .p-action-btn:hover { background: rgba(216,223,233,0.5); }
 .p-action-btn:active { background: #d8dfe9; color: #000; }
+.p-action-btn:disabled {
+  background: rgba(216,223,233,0.1);
+  color: rgba(216,223,233,0.3);
+  cursor: default;
+}

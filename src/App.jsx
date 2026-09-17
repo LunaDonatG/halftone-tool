@@ -439,6 +439,7 @@ export default function App() {
   }
 
   function handleExport() {
+    if (!hasImage) return
     const name = (params.Output.filename || 'halftone').trim() || 'halftone'
     if (isGifRef.current && params.Output.exportFormat === 'GIF') {
       const rendered = renderedFramesRef.current
@@ -496,7 +497,7 @@ export default function App() {
         )}
       </div>
 
-      <Panel params={params} onExport={handleExport} />
+      <Panel params={params} onExport={handleExport} canExport={hasImage} />
     </div>
   )
 }
