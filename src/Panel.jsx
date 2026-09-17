@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { DialStore } from 'dialkit'
-import { PANEL_ID } from './dialConfig.js'
+import { PANEL_ID, EFFECTS } from './dialConfig.js'
 import { ColorPickerField } from './ColorPicker.jsx'
 
 const set = (path, value) => {
@@ -66,8 +66,9 @@ function SegmentedToggle({ label, value, path, invert = false }) {
 
 const ASPECT_LABELS = { source: 'Source' }
 
-function Dropdown({ label, value, options, path, isOpen, onOpen, onClose }) {
+function Dropdown({ label, value, options, path, onChange, isOpen, onOpen, onClose, wide = false }) {
   const wrapRef = useRef(null)
+  const commit = o => (path ? set(path, o) : onChange(o))
 
   useEffect(() => {
     if (!isOpen) return
@@ -76,40 +77,46 @@ function Dropdown({ label, value, options, path, isOpen, onOpen, onClose }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [isOpen, onClose])
 
+  const trigger = (
+    <div className={`p-dd-wrap${wide ? ' wide' : ''}`}>
+      <button
+        type="button"
+        className="p-dd-trigger"
+        onClick={() => (isOpen ? onClose() : onOpen())}
+      >
+        <span>{ASPECT_LABELS[value] ?? value}</span>
+        <svg className={`p-dd-chevron${isOpen ? ' open' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="p-dd-menu">
+          {options.map(o => (
+            <button
+              key={o}
+              type="button"
+              className={`p-dd-item${o === value ? ' selected' : ''}`}
+              onClick={() => { commit(o); onClose() }}
+            >
+              <span>{ASPECT_LABELS[o] ?? o}</span>
+              {o === value && (
+                <svg className="p-dd-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 8l3.5 3.5L13 5"/>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  if (!label) return <div ref={wrapRef}>{trigger}</div>
+
   return (
     <div className="p-row" ref={wrapRef}>
       <span className="p-label">{label}</span>
-      <div className="p-dd-wrap">
-        <button
-          type="button"
-          className="p-dd-trigger"
-          onClick={() => (isOpen ? onClose() : onOpen())}
-        >
-          <span>{ASPECT_LABELS[value] ?? value}</span>
-          <svg className={`p-dd-chevron${isOpen ? ' open' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M6 9l6 6 6-6"/>
-          </svg>
-        </button>
-        {isOpen && (
-          <div className="p-dd-menu">
-            {options.map(o => (
-              <button
-                key={o}
-                type="button"
-                className={`p-dd-item${o === value ? ' selected' : ''}`}
-                onClick={() => { set(path, o); onClose() }}
-              >
-                <span>{ASPECT_LABELS[o] ?? o}</span>
-                {o === value && (
-                  <svg className="p-dd-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 8l3.5 3.5L13 5"/>
-                  </svg>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {trigger}
     </div>
   )
 }
@@ -144,78 +151,105 @@ const SHAPES = [
 
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
-export default function Panel({ params, onExport, canExport }) {
+export default function Panel({ params, onExport, canExport, effect, onEffectChange }) {
   const p = params.Properties
   const c = params.Color
   const o = params.Output
   const [openField, setOpenField] = useState(null)
+  const [collapsed, setCollapsed] = useState(false)
+  const isAscii = effect === 'ASCII'
+
+  if (collapsed) {
+    return (
+      <aside className="panel panel-collapsed">
+        <button className="p-logo-btn" onClick={() => setCollapsed(false)} title="Expandir panel">
+          <img src="/favicon.svg" alt="" className="p-logo-img" />
+        </button>
+      </aside>
+    )
+  }
 
   return (
     <aside className="panel">
       <div className="p-header">
-        <span className="p-header-title">HALFTONE</span>
-        <svg className="p-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
-          <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
-          <line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/>
-        </svg>
+        <button className="p-logo-btn" onClick={() => setCollapsed(true)} title="Colapsar panel">
+          <img src="/favicon.svg" alt="" className="p-logo-img" />
+        </button>
+        <Dropdown
+          value={effect} options={EFFECTS} onChange={onEffectChange}
+          isOpen={openField === 'effect'} wide
+          onOpen={() => setOpenField('effect')} onClose={() => setOpenField(null)}
+        />
       </div>
 
       <Section title="PROPERTIES">
-        <div className="p-slider-row">
-          <span className="p-label">Shape</span>
-          <div className="p-shape-btns">
-            {SHAPES.map(s => (
-              <button
-                key={s.id}
-                className={`p-shape-btn${p.shape === s.id ? ' active' : ''}`}
-                onClick={() => set('Properties.shape', s.id)}
-              >
-                {s.icon}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <Slider label="Dot Size" value={p.dotSize}  min={5}  max={60}  path="Properties.dotSize" />
-        <Slider label="Angle"    value={p.angle}    min={0}  max={90}  path="Properties.angle" />
-        <Slider label="Contrast" value={p.contrast} min={50} max={200} path="Properties.contrast" />
-        <Slider label="Spread"   value={p.spread}   min={0}  max={100} path="Properties.spread" />
-      </Section>
-
-      <Section title="COLOR" divider>
-        <ColorPickerField
-          label="Main color" value={c.barColor} chosen={c.barColorSet}
-          isOpen={openField === 'barColor'}
-          onOpen={() => setOpenField('barColor')} onClose={() => setOpenField(null)}
-          onChange={hex => { set('Color.barColor', hex); set('Color.barColorSet', true) }}
-        />
-
-        <SegmentedToggle label="Secondary color" value={c.secondaryEnabled} path="Color.secondaryEnabled" />
-        {c.secondaryEnabled && (
+        {isAscii ? (
           <>
-            <ColorPickerField
-              label="Secondary color" value={c.secondaryColor} chosen
-              isOpen={openField === 'secondaryColor'}
-              onOpen={() => setOpenField('secondaryColor')} onClose={() => setOpenField(null)}
-              onChange={hex => set('Color.secondaryColor', hex)}
-            />
-            <Slider label="Amount" value={c.secondaryAmount} min={0} max={100} path="Color.secondaryAmount" />
+            <Slider label="Cell Size" value={p.cellSize} min={6} max={40} path="Properties.cellSize" />
+            <SegmentedToggle label="Invert" value={p.invert} path="Properties.invert" />
+            <SegmentedToggle label="Color Mode" value={p.colorMode} path="Properties.colorMode" />
+            <SegmentedToggle label="Character rotation" value={p.characterRotation} path="Properties.characterRotation" />
+          </>
+        ) : (
+          <>
+            <div className="p-slider-row">
+              <span className="p-label">Shape</span>
+              <div className="p-shape-btns">
+                {SHAPES.map(s => (
+                  <button
+                    key={s.id}
+                    className={`p-shape-btn${p.shape === s.id ? ' active' : ''}`}
+                    onClick={() => set('Properties.shape', s.id)}
+                  >
+                    {s.icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Slider label="Dot Size" value={p.dotSize}  min={5}  max={60}  path="Properties.dotSize" />
+            <Slider label="Angle"    value={p.angle}    min={0}  max={90}  path="Properties.angle" />
+            <Slider label="Contrast" value={p.contrast} min={50} max={200} path="Properties.contrast" />
+            <Slider label="Spread"   value={p.spread}   min={0}  max={100} path="Properties.spread" />
           </>
         )}
-
-        <SegmentedToggle label="Background color" value={!c.bgTransparent} path="Color.bgTransparent" invert />
-        {!c.bgTransparent && (
-          <ColorPickerField
-            label="Background color" value={c.bgColor} chosen
-            isOpen={openField === 'bgColor'}
-            onOpen={() => setOpenField('bgColor')} onClose={() => setOpenField(null)}
-            onChange={hex => set('Color.bgColor', hex)}
-          />
-        )}
-
-        <SegmentedToggle label="Invert colors" value={c.invert} path="Color.invert" />
       </Section>
+
+      {!isAscii && (
+        <Section title="COLOR" divider>
+          <ColorPickerField
+            label="Main color" value={c.barColor} chosen={c.barColorSet}
+            isOpen={openField === 'barColor'}
+            onOpen={() => setOpenField('barColor')} onClose={() => setOpenField(null)}
+            onChange={hex => { set('Color.barColor', hex); set('Color.barColorSet', true) }}
+          />
+
+          <SegmentedToggle label="Secondary color" value={c.secondaryEnabled} path="Color.secondaryEnabled" />
+          {c.secondaryEnabled && (
+            <>
+              <ColorPickerField
+                label="Secondary color" value={c.secondaryColor} chosen
+                isOpen={openField === 'secondaryColor'}
+                onOpen={() => setOpenField('secondaryColor')} onClose={() => setOpenField(null)}
+                onChange={hex => set('Color.secondaryColor', hex)}
+              />
+              <Slider label="Amount" value={c.secondaryAmount} min={0} max={100} path="Color.secondaryAmount" />
+            </>
+          )}
+
+          <SegmentedToggle label="Background color" value={!c.bgTransparent} path="Color.bgTransparent" invert />
+          {!c.bgTransparent && (
+            <ColorPickerField
+              label="Background color" value={c.bgColor} chosen
+              isOpen={openField === 'bgColor'}
+              onOpen={() => setOpenField('bgColor')} onClose={() => setOpenField(null)}
+              onChange={hex => set('Color.bgColor', hex)}
+            />
+          )}
+
+          <SegmentedToggle label="Invert colors" value={c.invert} path="Color.invert" />
+        </Section>
+      )}
 
       <Section title="EXPORT" divider>
         <Dropdown

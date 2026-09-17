@@ -131,16 +131,28 @@ body {
 .p-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
 }
-.p-header-title {
-  font-family: var(--font-heading);
-  font-weight: 500;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  color: #fff;
+
+.p-logo-btn {
+  flex-shrink: 0;
+  width: 40px; height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
 }
-.p-header-icon { width: 24px; height: 24px; color: var(--text); }
+.p-logo-img { display: block; width: 100%; height: 100%; }
+
+/* ── Collapsed panel ──────────────────────────────────── */
+
+.panel-collapsed {
+  width: 56px;
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+}
 
 /* ── Section ──────────────────────────────────────────── */
 
@@ -476,6 +488,7 @@ body {
   position: relative;
   flex-shrink: 0;
 }
+.p-dd-wrap.wide { flex: 1; min-width: 0; }
 
 .p-dd-trigger {
   display: flex;
@@ -492,6 +505,8 @@ body {
   letter-spacing: 0.02em;
   cursor: pointer;
 }
+.p-dd-wrap.wide .p-dd-trigger { width: 100%; background: rgba(31,41,55,0.7); }
+.p-dd-wrap.wide .p-dd-menu { width: 100%; }
 .p-dd-chevron {
   width: 16px; height: 16px;
   color: var(--text-dim);

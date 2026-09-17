@@ -1,6 +1,15 @@
 export const PANEL_ID = 'Halftone'
 
-export const DIAL_CONFIG = {
+export const EFFECTS = ['Halftone', 'ASCII']
+
+const OUTPUT = {
+  outputRatio:  { type: 'select', options: ['source','1:1','4:3','3:2','16:9','9:16','3:4','2:3'], default: 'source' },
+  animate:      true,
+  exportFormat: { type: 'select', options: ['GIF', 'PNG'], default: 'GIF' },
+  filename:     { type: 'text', default: 'halftone' },
+}
+
+export const HALFTONE_CONFIG = {
   Properties: {
     shape:    { type: 'select', options: ['bars', 'dots', 'squares', 'diamond'], default: 'bars' },
     dotSize:  [10,  5,   60,  1],
@@ -18,10 +27,15 @@ export const DIAL_CONFIG = {
     bgColor:         { type: 'color', default: '#F0F4F8' },
     invert:          false,
   },
-  Output: {
-    outputRatio:  { type: 'select', options: ['source','1:1','4:3','3:2','16:9','9:16','3:4','2:3'], default: 'source' },
-    animate:      true,
-    exportFormat: { type: 'select', options: ['GIF', 'PNG'], default: 'GIF' },
-    filename:     { type: 'text', default: 'halftone' },
+  Output: OUTPUT,
+}
+
+export const ASCII_CONFIG = {
+  Properties: {
+    cellSize:          [16, 6, 40, 1],
+    invert:            false,
+    colorMode:         true,
+    characterRotation: false,
   },
+  Output: OUTPUT,
 }
