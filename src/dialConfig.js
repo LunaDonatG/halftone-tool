@@ -40,6 +40,7 @@ export const ASCII_CONFIG = {
   Properties: {
     cellSize:          [16, 6, 40, 1],
     characterRotation: false,
+    charRamp:          { type: 'text', default: '@%#*+=-:. ' },
   },
   Color: COLOR,
   Output: OUTPUT,

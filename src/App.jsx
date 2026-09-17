@@ -192,7 +192,7 @@ function drawHalftone(canvas, img, {
 // Real monospace characters (not the shader bit-pattern trick some tools use):
 // each cell's average brightness picks a character from a dark→light ramp.
 
-const ASCII_RAMP = '@%#*+=-:. '
+const DEFAULT_ASCII_RAMP = '@%#*+=-:. '
 
 function hash2(x, y) {
   const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
@@ -200,10 +200,11 @@ function hash2(x, y) {
 }
 
 function drawAscii(canvas, img, {
-  cellSize, characterRotation, invert,
+  cellSize, characterRotation, charRamp, invert,
   barColor, bgColor, bgTransparent, secondaryColor, secondaryAmount,
   outputRatio, zoom, offset,
 }) {
+  const ramp = charRamp && charRamp.length > 0 ? charRamp : DEFAULT_ASCII_RAMP
   const { W, H, data: src } = prepareSource(img, { outputRatio, invert, zoom, offset })
   const cell = Math.max(4, Math.round(cellSize))
 
@@ -237,7 +238,7 @@ function drawAscii(canvas, img, {
       if (n === 0) continue
       const brightness = sum / n / 255
       const t = invert ? brightness : 1 - brightness
-      const char = ASCII_RAMP[Math.min(ASCII_RAMP.length - 1, Math.floor(t * ASCII_RAMP.length))]
+      const char = ramp[Math.min(ramp.length - 1, Math.floor(t * ramp.length))]
       if (char === ' ') continue
 
       const px = cx + cell / 2, py = cy + cell / 2
@@ -318,7 +319,7 @@ export default function App() {
   // Unified params snapshot for render calls
   const renderParams = useCallback(() => ({
     ...(isAscii
-      ? { cellSize: params.Properties.cellSize, characterRotation: params.Properties.characterRotation }
+      ? { cellSize: params.Properties.cellSize, characterRotation: params.Properties.characterRotation, charRamp: params.Properties.charRamp }
       : { dotSize: params.Properties.dotSize, spread: params.Properties.spread, contrast: params.Properties.contrast, angle: params.Properties.angle, shape: params.Properties.shape }
     ),
     invert:        params.Color.invert,
@@ -330,7 +331,7 @@ export default function App() {
     outputRatio:   params.Output.outputRatio,
   }), [
     isAscii,
-    params.Properties.cellSize, params.Properties.characterRotation,
+    params.Properties.cellSize, params.Properties.characterRotation, params.Properties.charRamp,
     params.Properties.dotSize, params.Properties.spread, params.Properties.contrast,
     params.Properties.angle, params.Properties.shape,
     params.Color.invert, params.Color.barColor, params.Color.bgColor,

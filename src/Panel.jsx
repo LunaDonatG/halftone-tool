@@ -225,6 +225,7 @@ export default function Panel({ params, onExport, canExport, effect, onEffectCha
           <>
             <Slider label="Cell Size" value={p.cellSize} min={6} max={40} path="Properties.cellSize" />
             <SegmentedToggle label="Character rotation" value={p.characterRotation} path="Properties.characterRotation" />
+            <TextInput label="Characters" value={p.charRamp} path="Properties.charRamp" placeholder="@%#*+=-:. " />
           </>
         ) : (
           <>
