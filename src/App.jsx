@@ -286,6 +286,7 @@ export default function App() {
   const canvasRef = useRef(null)
   const imgRef    = useRef(null)
   const stageRef  = useRef(null)
+  const fileInputRef = useRef(null)
   const dragRef   = useRef({ active: false, startX: 0, startY: 0, startOffset: { x: 0, y: 0 } })
 
   const rawFramesRef      = useRef(null)
@@ -467,6 +468,18 @@ export default function App() {
     return () => el.removeEventListener('wheel', onWheel)
   }, [hasImage])
 
+  // ── Paste from clipboard ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const onPaste = (e) => {
+      const file = Array.from(e.clipboardData?.items || [])
+        .find(item => item.type.startsWith('image/'))
+        ?.getAsFile()
+      if (file) loadFile(file)
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [])
+
   // ── Pan ─────────────────────────────────────────────────────────────────────
   function handleMouseDown(e) {
     if (!hasImage || e.button !== 0) return
@@ -571,10 +584,24 @@ export default function App() {
 
         {!hasImage && (
           <div className="placeholder">
-            <span className="drop-hint">Drag a file and start shaping!</span>
+            <span className="drop-hint">
+              Drag or{' '}
+              <button type="button" className="drop-hint-link" onClick={() => fileInputRef.current?.click()}>
+                upload
+              </button>
+              {' '}a file and start shaping!
+            </span>
           </div>
         )}
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="file-input-hidden"
+        onChange={(e) => { loadFile(e.target.files[0]); e.target.value = '' }}
+      />
     </div>
   )
 }
