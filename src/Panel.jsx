@@ -149,6 +149,44 @@ const SHAPES = [
   { id: 'bars',    icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="6.5" width="10" height="3" rx="1"/></svg> },
 ]
 
+function ColorControls({ c, openField, setOpenField }) {
+  return (
+    <>
+      <ColorPickerField
+        label="Main color" value={c.barColor} chosen={c.barColorSet}
+        isOpen={openField === 'barColor'}
+        onOpen={() => setOpenField('barColor')} onClose={() => setOpenField(null)}
+        onChange={hex => { set('Color.barColor', hex); set('Color.barColorSet', true) }}
+      />
+
+      <SegmentedToggle label="Secondary color" value={c.secondaryEnabled} path="Color.secondaryEnabled" />
+      {c.secondaryEnabled && (
+        <>
+          <ColorPickerField
+            label="Secondary color" value={c.secondaryColor} chosen
+            isOpen={openField === 'secondaryColor'}
+            onOpen={() => setOpenField('secondaryColor')} onClose={() => setOpenField(null)}
+            onChange={hex => set('Color.secondaryColor', hex)}
+          />
+          <Slider label="Amount" value={c.secondaryAmount} min={0} max={100} path="Color.secondaryAmount" />
+        </>
+      )}
+
+      <SegmentedToggle label="Background color" value={!c.bgTransparent} path="Color.bgTransparent" invert />
+      {!c.bgTransparent && (
+        <ColorPickerField
+          label="Background color" value={c.bgColor} chosen
+          isOpen={openField === 'bgColor'}
+          onOpen={() => setOpenField('bgColor')} onClose={() => setOpenField(null)}
+          onChange={hex => set('Color.bgColor', hex)}
+        />
+      )}
+
+      <SegmentedToggle label="Invert colors" value={c.invert} path="Color.invert" />
+    </>
+  )
+}
+
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
 export default function Panel({ params, onExport, canExport, effect, onEffectChange }) {
@@ -186,8 +224,6 @@ export default function Panel({ params, onExport, canExport, effect, onEffectCha
         {isAscii ? (
           <>
             <Slider label="Cell Size" value={p.cellSize} min={6} max={40} path="Properties.cellSize" />
-            <SegmentedToggle label="Invert" value={p.invert} path="Properties.invert" />
-            <SegmentedToggle label="Color Mode" value={p.colorMode} path="Properties.colorMode" />
             <SegmentedToggle label="Character rotation" value={p.characterRotation} path="Properties.characterRotation" />
           </>
         ) : (
@@ -215,41 +251,9 @@ export default function Panel({ params, onExport, canExport, effect, onEffectCha
         )}
       </Section>
 
-      {!isAscii && (
-        <Section title="COLOR" divider>
-          <ColorPickerField
-            label="Main color" value={c.barColor} chosen={c.barColorSet}
-            isOpen={openField === 'barColor'}
-            onOpen={() => setOpenField('barColor')} onClose={() => setOpenField(null)}
-            onChange={hex => { set('Color.barColor', hex); set('Color.barColorSet', true) }}
-          />
-
-          <SegmentedToggle label="Secondary color" value={c.secondaryEnabled} path="Color.secondaryEnabled" />
-          {c.secondaryEnabled && (
-            <>
-              <ColorPickerField
-                label="Secondary color" value={c.secondaryColor} chosen
-                isOpen={openField === 'secondaryColor'}
-                onOpen={() => setOpenField('secondaryColor')} onClose={() => setOpenField(null)}
-                onChange={hex => set('Color.secondaryColor', hex)}
-              />
-              <Slider label="Amount" value={c.secondaryAmount} min={0} max={100} path="Color.secondaryAmount" />
-            </>
-          )}
-
-          <SegmentedToggle label="Background color" value={!c.bgTransparent} path="Color.bgTransparent" invert />
-          {!c.bgTransparent && (
-            <ColorPickerField
-              label="Background color" value={c.bgColor} chosen
-              isOpen={openField === 'bgColor'}
-              onOpen={() => setOpenField('bgColor')} onClose={() => setOpenField(null)}
-              onChange={hex => set('Color.bgColor', hex)}
-            />
-          )}
-
-          <SegmentedToggle label="Invert colors" value={c.invert} path="Color.invert" />
-        </Section>
-      )}
+      <Section title="COLOR" divider>
+        <ColorControls c={c} openField={openField} setOpenField={setOpenField} />
+      </Section>
 
       <Section title="EXPORT" divider>
         <Dropdown

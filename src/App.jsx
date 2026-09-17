@@ -199,14 +199,26 @@ function hash2(x, y) {
   return s - Math.floor(s)
 }
 
-function drawAscii(canvas, img, { cellSize, invert, colorMode, characterRotation, outputRatio, zoom, offset }) {
+function drawAscii(canvas, img, {
+  cellSize, characterRotation, invert,
+  barColor, bgColor, bgTransparent, secondaryColor, secondaryAmount,
+  outputRatio, zoom, offset,
+}) {
   const { W, H, data: src } = prepareSource(img, { outputRatio, invert, zoom, offset })
   const cell = Math.max(4, Math.round(cellSize))
 
+  const inkRgb = hexToRgb(barColor)
+  const secondaryRgb = secondaryColor ? hexToRgb(secondaryColor) : null
+  const bgRgb = hexToRgb(bgColor)
+  const threshold = secondaryRgb ? secondaryAmount / 100 : 0
+
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')
-  ctx.fillStyle = '#000000'
-  ctx.fillRect(0, 0, W, H)
+  if (bgTransparent) ctx.clearRect(0, 0, W, H)
+  else {
+    ctx.fillStyle = `rgb(${bgRgb[0]}, ${bgRgb[1]}, ${bgRgb[2]})`
+    ctx.fillRect(0, 0, W, H)
+  }
   ctx.font = `${cell}px monospace`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -214,17 +226,16 @@ function drawAscii(canvas, img, { cellSize, invert, colorMode, characterRotation
   for (let cy = 0; cy < H; cy += cell) {
     for (let cx = 0; cx < W; cx += cell) {
       const x1 = Math.min(W, cx + cell), y1 = Math.min(H, cy + cell)
-      let sumR = 0, sumG = 0, sumB = 0, n = 0
+      let sum = 0, n = 0
       for (let py = cy; py < y1; py++) {
         for (let px = cx; px < x1; px++) {
           const i = (py * W + px) * 4
-          sumR += src[i]; sumG += src[i + 1]; sumB += src[i + 2]
+          sum += 0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2]
           n++
         }
       }
       if (n === 0) continue
-      const r = sumR / n, g = sumG / n, b = sumB / n
-      const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+      const brightness = sum / n / 255
       const t = invert ? brightness : 1 - brightness
       const char = ASCII_RAMP[Math.min(ASCII_RAMP.length - 1, Math.floor(t * ASCII_RAMP.length))]
       if (char === ' ') continue
@@ -233,7 +244,8 @@ function drawAscii(canvas, img, { cellSize, invert, colorMode, characterRotation
       ctx.save()
       ctx.translate(px, py)
       if (characterRotation) ctx.rotate((Math.floor(hash2(cx, cy) * 4) * Math.PI) / 2)
-      ctx.fillStyle = colorMode ? `rgb(${r | 0}, ${g | 0}, ${b | 0})` : '#ffffff'
+      const color = (threshold > 0 && t < threshold) ? secondaryRgb : inkRgb
+      ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`
       ctx.fillText(char, 0, 0)
       ctx.restore()
     }
@@ -304,36 +316,26 @@ export default function App() {
   const drawEffect = isAscii ? drawAscii : drawHalftone
 
   // Unified params snapshot for render calls
-  const renderParams = useCallback(() => (
-    isAscii ? {
-      cellSize:          params.Properties.cellSize,
-      invert:            params.Properties.invert,
-      colorMode:         params.Properties.colorMode,
-      characterRotation: params.Properties.characterRotation,
-      outputRatio:       params.Output.outputRatio,
-    } : {
-      dotSize:       params.Properties.dotSize,
-      spread:        params.Properties.spread,
-      contrast:      params.Properties.contrast,
-      angle:         params.Properties.angle,
-      shape:         params.Properties.shape,
-      invert:        params.Color.invert,
-      barColor:      params.Color.barColor,
-      bgColor:       params.Color.bgColor,
-      bgTransparent: params.Color.bgTransparent,
-      secondaryColor:    params.Color.secondaryEnabled ? params.Color.secondaryColor : null,
-      secondaryAmount:   params.Color.secondaryAmount,
-      outputRatio:   params.Output.outputRatio,
-    }
-  ), [
+  const renderParams = useCallback(() => ({
+    ...(isAscii
+      ? { cellSize: params.Properties.cellSize, characterRotation: params.Properties.characterRotation }
+      : { dotSize: params.Properties.dotSize, spread: params.Properties.spread, contrast: params.Properties.contrast, angle: params.Properties.angle, shape: params.Properties.shape }
+    ),
+    invert:        params.Color.invert,
+    barColor:      params.Color.barColor,
+    bgColor:       params.Color.bgColor,
+    bgTransparent: params.Color.bgTransparent,
+    secondaryColor:    params.Color.secondaryEnabled ? params.Color.secondaryColor : null,
+    secondaryAmount:   params.Color.secondaryAmount,
+    outputRatio:   params.Output.outputRatio,
+  }), [
     isAscii,
-    params.Properties.cellSize, params.Properties.invert,
-    params.Properties.colorMode, params.Properties.characterRotation,
+    params.Properties.cellSize, params.Properties.characterRotation,
     params.Properties.dotSize, params.Properties.spread, params.Properties.contrast,
     params.Properties.angle, params.Properties.shape,
-    params.Color?.invert, params.Color?.barColor, params.Color?.bgColor,
-    params.Color?.bgTransparent, params.Color?.secondaryEnabled,
-    params.Color?.secondaryColor, params.Color?.secondaryAmount,
+    params.Color.invert, params.Color.barColor, params.Color.bgColor,
+    params.Color.bgTransparent, params.Color.secondaryEnabled,
+    params.Color.secondaryColor, params.Color.secondaryAmount,
     params.Output.outputRatio,
   ])
 

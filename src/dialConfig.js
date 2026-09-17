@@ -9,6 +9,21 @@ const OUTPUT = {
   filename:     { type: 'text', default: 'halftone' },
 }
 
+// Shared by both effects — same field paths, so dialkit preserves whichever
+// value the user picked across an effect switch instead of resetting it.
+// Defaults must therefore match between configs, or switching effects would
+// silently discard one effect's "default" the first time the other is opened.
+const COLOR = {
+  barColor:        { type: 'color', default: '#000000' },
+  barColorSet:     false,
+  secondaryEnabled: false,
+  secondaryColor:   { type: 'color', default: '#2563eb' },
+  secondaryAmount:  [0, 0, 100, 1],
+  bgTransparent:   false,
+  bgColor:         { type: 'color', default: '#F0F4F8' },
+  invert:          false,
+}
+
 export const HALFTONE_CONFIG = {
   Properties: {
     shape:    { type: 'select', options: ['bars', 'dots', 'squares', 'diamond'], default: 'bars' },
@@ -17,25 +32,15 @@ export const HALFTONE_CONFIG = {
     contrast: [100, 50, 200,  1],
     spread:   [90,  0,  100,  1],
   },
-  Color: {
-    barColor:        { type: 'color', default: '#000000' },
-    barColorSet:     false,
-    secondaryEnabled: false,
-    secondaryColor:   { type: 'color', default: '#2563eb' },
-    secondaryAmount:  [0, 0, 100, 1],
-    bgTransparent:   false,
-    bgColor:         { type: 'color', default: '#F0F4F8' },
-    invert:          false,
-  },
+  Color: COLOR,
   Output: OUTPUT,
 }
 
 export const ASCII_CONFIG = {
   Properties: {
     cellSize:          [16, 6, 40, 1],
-    invert:            false,
-    colorMode:         true,
     characterRotation: false,
   },
+  Color: COLOR,
   Output: OUTPUT,
 }
