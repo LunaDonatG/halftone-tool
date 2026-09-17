@@ -78,7 +78,7 @@ function Dropdown({ label, value, options, path, onChange, isOpen, onOpen, onClo
   }, [isOpen, onClose])
 
   const trigger = (
-    <div className={`p-dd-wrap${wide ? ' wide' : ''}`}>
+    <div className={`p-dd-wrap${wide ? ' wide' : ''}`} ref={label ? null : wrapRef}>
       <button
         type="button"
         className="p-dd-trigger"
@@ -111,7 +111,7 @@ function Dropdown({ label, value, options, path, onChange, isOpen, onOpen, onClo
     </div>
   )
 
-  if (!label) return <div ref={wrapRef}>{trigger}</div>
+  if (!label) return trigger
 
   return (
     <div className="p-row" ref={wrapRef}>
@@ -163,7 +163,7 @@ export default function Panel({ params, onExport, canExport, effect, onEffectCha
     return (
       <aside className="panel panel-collapsed">
         <button className="p-logo-btn" onClick={() => setCollapsed(false)} title="Expandir panel">
-          <img src="/favicon.svg" alt="" className="p-logo-img" />
+          <img src="/logo.svg" alt="" className="p-logo-img" />
         </button>
       </aside>
     )
@@ -173,7 +173,7 @@ export default function Panel({ params, onExport, canExport, effect, onEffectCha
     <aside className="panel">
       <div className="p-header">
         <button className="p-logo-btn" onClick={() => setCollapsed(true)} title="Colapsar panel">
-          <img src="/favicon.svg" alt="" className="p-logo-img" />
+          <img src="/logo.svg" alt="" className="p-logo-img" />
         </button>
         <Dropdown
           value={effect} options={EFFECTS} onChange={onEffectChange}
