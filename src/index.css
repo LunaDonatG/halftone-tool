@@ -45,7 +45,7 @@ body {
   justify-content: center;
   background: rgba(203,213,225,0.03);
   border: 1px dashed #4a6182;
-  border-radius: 16px;
+  border-radius: 8px;
   transition: border-color 0.15s, background 0.15s;
   overflow: hidden;
 }
