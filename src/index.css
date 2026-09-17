@@ -43,8 +43,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(100,116,139,0.07);
-  border: 1px dashed var(--border);
+  background: rgba(203,213,225,0.03);
+  border: 1px dashed #4a6182;
   border-radius: 16px;
   transition: border-color 0.15s, background 0.15s;
   overflow: hidden;
@@ -85,13 +85,22 @@ body {
   position: absolute;
   inset: 0;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 12px;
+  align-items: center; justify-content: flex-end;
+  padding-bottom: 24px;
   pointer-events: none;
-  color: #64748b;
 }
-.placeholder-icon { width: 144px; height: 144px; }
-.placeholder p { margin: 0; font-size: 13px; }
+.drop-hint {
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(17.5px);
+  -webkit-backdrop-filter: blur(17.5px);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
 
 .rendering-overlay {
   position: absolute; inset: 0;
