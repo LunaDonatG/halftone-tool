@@ -585,7 +585,7 @@ export default function App() {
         {!hasImage && (
           <div className="placeholder">
             <span className="drop-hint">
-              Drag or{' '}
+              Drag, paste, or{' '}
               <button type="button" className="drop-hint-link" onClick={() => fileInputRef.current?.click()}>
                 upload
               </button>
