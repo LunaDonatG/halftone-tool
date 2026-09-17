@@ -507,6 +507,8 @@ body {
 }
 .p-dd-wrap.wide .p-dd-trigger { width: 100%; background: rgba(31,41,55,0.7); }
 .p-dd-wrap.wide .p-dd-menu { width: 100%; }
+.p-dd-wrap.wide .p-dd-trigger span,
+.p-dd-wrap.wide .p-dd-item span { text-transform: uppercase; }
 .p-dd-chevron {
   width: 16px; height: 16px;
   color: var(--text-dim);
