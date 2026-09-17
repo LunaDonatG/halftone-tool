@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useDialKit } from 'dialkit'
 import Panel from './Panel.jsx'
-import { PANEL_ID, DIAL_CONFIG } from './dialConfig.js'
+import { PANEL_ID, EFFECTS, HALFTONE_CONFIG, ASCII_CONFIG } from './dialConfig.js'
 import { parseGIF, decompressFrames } from 'gifuct-js'
 import { GIFEncoder, quantize, applyPalette } from 'gifenc'
 
@@ -66,13 +66,11 @@ async function extractGifFrames(file) {
   return result
 }
 
-// ── Halftone renderer ──────────────────────────────────────────────────────────
+// ── Shared source prep ───────────────────────────────────────────────────────
+// Fits the image into the output ratio (padded, not cropped), then samples the
+// zoomed/panned sub-region. Shared by every effect's renderer.
 
-function drawHalftone(canvas, img, {
-  dotSize, spread, contrast, angle, shape, invert,
-  barColor, bgColor, bgTransparent, secondaryColor, secondaryAmount,
-  outputRatio, zoom, offset,
-}) {
+function prepareSource(img, { outputRatio, invert, zoom, offset }) {
   const imgW = img.naturalWidth  ?? img.width
   const imgH = img.naturalHeight ?? img.height
   const [W, H, imgX, imgY] = getContain(imgW, imgH, outputRatio)
@@ -94,7 +92,18 @@ function drawHalftone(canvas, img, {
   const srcY = H / 2 - (H / 2 + offset.y) / zoom
   octx.drawImage(padded, srcX, srcY, srcW, srcH, 0, 0, W, H)
 
-  const { data: src } = octx.getImageData(0, 0, W, H)
+  const { data } = octx.getImageData(0, 0, W, H)
+  return { W, H, data }
+}
+
+// ── Halftone renderer ──────────────────────────────────────────────────────────
+
+function drawHalftone(canvas, img, {
+  dotSize, spread, contrast, angle, shape, invert,
+  barColor, bgColor, bgTransparent, secondaryColor, secondaryAmount,
+  outputRatio, zoom, offset,
+}) {
+  const { W, H, data: src } = prepareSource(img, { outputRatio, invert, zoom, offset })
   const cell    = Math.max(1, Math.round(dotSize))
   const halfW   = W / 2, halfH = H / 2
   const rad     = angle * Math.PI / 180
@@ -179,6 +188,71 @@ function drawHalftone(canvas, img, {
   ctx.putImageData(out, 0, 0)
 }
 
+// ── ASCII renderer ───────────────────────────────────────────────────────────
+// Real monospace characters (not the shader bit-pattern trick some tools use):
+// each cell's average brightness picks a character from a dark→light ramp.
+
+const DEFAULT_ASCII_RAMP = '@%#*+=-:. '
+
+function hash2(x, y) {
+  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
+  return s - Math.floor(s)
+}
+
+function drawAscii(canvas, img, {
+  cellSize, characterRotation, charRamp, invert,
+  barColor, bgColor, bgTransparent, secondaryColor, secondaryAmount,
+  outputRatio, zoom, offset,
+}) {
+  const ramp = charRamp && charRamp.length > 0 ? charRamp : DEFAULT_ASCII_RAMP
+  const { W, H, data: src } = prepareSource(img, { outputRatio, invert, zoom, offset })
+  const cell = Math.max(4, Math.round(cellSize))
+
+  const inkRgb = hexToRgb(barColor)
+  const secondaryRgb = secondaryColor ? hexToRgb(secondaryColor) : null
+  const bgRgb = hexToRgb(bgColor)
+  const threshold = secondaryRgb ? secondaryAmount / 100 : 0
+
+  canvas.width = W; canvas.height = H
+  const ctx = canvas.getContext('2d')
+  if (bgTransparent) ctx.clearRect(0, 0, W, H)
+  else {
+    ctx.fillStyle = `rgb(${bgRgb[0]}, ${bgRgb[1]}, ${bgRgb[2]})`
+    ctx.fillRect(0, 0, W, H)
+  }
+  ctx.font = `${cell}px monospace`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
+  for (let cy = 0; cy < H; cy += cell) {
+    for (let cx = 0; cx < W; cx += cell) {
+      const x1 = Math.min(W, cx + cell), y1 = Math.min(H, cy + cell)
+      let sum = 0, n = 0
+      for (let py = cy; py < y1; py++) {
+        for (let px = cx; px < x1; px++) {
+          const i = (py * W + px) * 4
+          sum += 0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2]
+          n++
+        }
+      }
+      if (n === 0) continue
+      const brightness = sum / n / 255
+      const t = invert ? brightness : 1 - brightness
+      const char = ramp[Math.min(ramp.length - 1, Math.floor(t * ramp.length))]
+      if (char === ' ') continue
+
+      const px = cx + cell / 2, py = cy + cell / 2
+      ctx.save()
+      ctx.translate(px, py)
+      if (characterRotation) ctx.rotate((Math.floor(hash2(cx, cy) * 4) * Math.PI) / 2)
+      const color = (threshold > 0 && t < threshold) ? secondaryRgb : inkRgb
+      ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`
+      ctx.fillText(char, 0, 0)
+      ctx.restore()
+    }
+  }
+}
+
 function drawGifFrame(canvas, frameCanvas, zoom, offset) {
   const W = frameCanvas.width, H = frameCanvas.height
   if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H }
@@ -236,15 +310,18 @@ export default function App() {
   useEffect(() => { zoomRef.current = zoom }, [zoom])
   useEffect(() => { offsetRef.current = offset }, [offset])
 
-  const params = useDialKit(PANEL_ID, DIAL_CONFIG)
+  const [effect, setEffect] = useState(EFFECTS[0])
+  const isAscii = effect === 'ASCII'
+  const params = useDialKit(PANEL_ID, isAscii ? ASCII_CONFIG : HALFTONE_CONFIG)
+
+  const drawEffect = isAscii ? drawAscii : drawHalftone
 
   // Unified params snapshot for render calls
   const renderParams = useCallback(() => ({
-    dotSize:       params.Properties.dotSize,
-    spread:        params.Properties.spread,
-    contrast:      params.Properties.contrast,
-    angle:         params.Properties.angle,
-    shape:         params.Properties.shape,
+    ...(isAscii
+      ? { cellSize: params.Properties.cellSize, characterRotation: params.Properties.characterRotation, charRamp: params.Properties.charRamp }
+      : { dotSize: params.Properties.dotSize, spread: params.Properties.spread, contrast: params.Properties.contrast, angle: params.Properties.angle, shape: params.Properties.shape }
+    ),
     invert:        params.Color.invert,
     barColor:      params.Color.barColor,
     bgColor:       params.Color.bgColor,
@@ -253,6 +330,8 @@ export default function App() {
     secondaryAmount:   params.Color.secondaryAmount,
     outputRatio:   params.Output.outputRatio,
   }), [
+    isAscii,
+    params.Properties.cellSize, params.Properties.characterRotation, params.Properties.charRamp,
     params.Properties.dotSize, params.Properties.spread, params.Properties.contrast,
     params.Properties.angle, params.Properties.shape,
     params.Color.invert, params.Color.barColor, params.Color.bgColor,
@@ -292,8 +371,8 @@ export default function App() {
   // ── Static image redraw ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!hasImage || isGif || !imgRef.current || !canvasRef.current) return
-    drawHalftone(canvasRef.current, imgRef.current, { ...renderParams(), zoom, offset })
-  }, [hasImage, isGif, zoom, offset, renderParams])
+    drawEffect(canvasRef.current, imgRef.current, { ...renderParams(), zoom, offset })
+  }, [hasImage, isGif, zoom, offset, renderParams, drawEffect])
 
   // ── GIF re-render on param change ──────────────────────────────────────────
   useEffect(() => {
@@ -314,7 +393,7 @@ export default function App() {
         if (renderIdRef.current !== id) return
         const { canvas: rawCanvas, delay } = raw[i]
         const outCanvas = document.createElement('canvas')
-        drawHalftone(outCanvas, rawCanvas, currentParams)
+        drawEffect(outCanvas, rawCanvas, currentParams)
         rendered.push({ canvas: outCanvas, delay })
         if (!started) {
           started = true
@@ -330,7 +409,7 @@ export default function App() {
       if (renderIdRef.current !== id) return
       if (animateRef.current) startAnimation()
     })()
-  }, [hasImage, isGif, renderParams])
+  }, [hasImage, isGif, renderParams, drawEffect])
 
   // ── Animate toggle ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -439,6 +518,7 @@ export default function App() {
   }
 
   function handleExport() {
+    if (!hasImage) return
     const name = (params.Output.filename || 'halftone').trim() || 'halftone'
     if (isGifRef.current && params.Output.exportFormat === 'GIF') {
       const rendered = renderedFramesRef.current
@@ -458,6 +538,11 @@ export default function App() {
 
   return (
     <div className="app">
+      <Panel
+        params={params} onExport={handleExport} canExport={hasImage}
+        effect={effect} onEffectChange={setEffect}
+      />
+
       <div
         ref={stageRef}
         className={stageClass}
@@ -495,8 +580,6 @@ export default function App() {
           </div>
         )}
       </div>
-
-      <Panel params={params} onExport={handleExport} />
     </div>
   )
 }
