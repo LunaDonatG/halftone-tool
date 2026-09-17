@@ -537,6 +537,11 @@ export default function App() {
 
   return (
     <div className="app">
+      <Panel
+        params={params} onExport={handleExport} canExport={hasImage}
+        effect={effect} onEffectChange={setEffect}
+      />
+
       <div
         ref={stageRef}
         className={stageClass}
@@ -574,11 +579,6 @@ export default function App() {
           </div>
         )}
       </div>
-
-      <Panel
-        params={params} onExport={handleExport} canExport={hasImage}
-        effect={effect} onEffectChange={setEffect}
-      />
     </div>
   )
 }
