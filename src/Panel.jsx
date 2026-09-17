@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DialStore } from 'dialkit'
 import { PANEL_ID } from './dialConfig.js'
 import { ColorPickerField } from './ColorPicker.jsx'
@@ -64,17 +64,51 @@ function SegmentedToggle({ label, value, path, invert = false }) {
   )
 }
 
-function Select({ label, value, options, path }) {
+const ASPECT_LABELS = { source: 'Source' }
+
+function Dropdown({ label, value, options, path, isOpen, onOpen, onClose }) {
+  const wrapRef = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [isOpen, onClose])
+
   return (
-    <div className="p-row">
+    <div className="p-row" ref={wrapRef}>
       <span className="p-label">{label}</span>
-      <div className="p-dropdown">
-        <select value={value} onChange={e => set(path, e.target.value)}>
-          {options.map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="p-select-chevron">
-          <path d="M6 9l6 6 6-6"/>
-        </svg>
+      <div className="p-dd-wrap">
+        <button
+          type="button"
+          className="p-dd-trigger"
+          onClick={() => (isOpen ? onClose() : onOpen())}
+        >
+          <span>{ASPECT_LABELS[value] ?? value}</span>
+          <svg className={`p-dd-chevron${isOpen ? ' open' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </button>
+        {isOpen && (
+          <div className="p-dd-menu">
+            {options.map(o => (
+              <button
+                key={o}
+                type="button"
+                className={`p-dd-item${o === value ? ' selected' : ''}`}
+                onClick={() => { set(path, o); onClose() }}
+              >
+                <span>{ASPECT_LABELS[o] ?? o}</span>
+                {o === value && (
+                  <svg className="p-dd-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 8l3.5 3.5L13 5"/>
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -82,11 +116,11 @@ function Select({ label, value, options, path }) {
 
 function TextInput({ label, value, path, placeholder }) {
   return (
-    <div className="p-text-row">
+    <div className="p-field-col">
       <span className="p-label">{label}</span>
       <input
         type="text"
-        className="p-text"
+        className="p-input"
         value={value}
         placeholder={placeholder}
         onChange={e => set(path, e.target.value)}
@@ -184,9 +218,21 @@ export default function Panel({ params, onExport }) {
       </Section>
 
       <Section title="EXPORT" divider>
-        <Select label="Aspect"    value={o.outputRatio}  options={['source','1:1','4:3','3:2','16:9','9:16','3:4','2:3']} path="Output.outputRatio" />
-        <Select label="File type" value={o.exportFormat} options={['GIF','PNG']} path="Output.exportFormat" />
-        <TextInput label="Filename" value={o.filename} path="Output.filename" placeholder="name" />
+        <Dropdown
+          label="Aspect" value={o.outputRatio}
+          options={['source', '1:1', '4:3', '3:2', '16:9', '9:16', '3:4', '2:3']}
+          path="Output.outputRatio"
+          isOpen={openField === 'outputRatio'}
+          onOpen={() => setOpenField('outputRatio')} onClose={() => setOpenField(null)}
+        />
+        <Dropdown
+          label="File Type" value={o.exportFormat}
+          options={['GIF', 'PNG']}
+          path="Output.exportFormat"
+          isOpen={openField === 'exportFormat'}
+          onOpen={() => setOpenField('exportFormat')} onClose={() => setOpenField(null)}
+        />
+        <TextInput label="File Name" value={o.filename} path="Output.filename" placeholder="halftone" />
         <ActionButton label="Export" onClick={onExport} />
       </Section>
     </aside>
