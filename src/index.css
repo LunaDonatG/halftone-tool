@@ -36,6 +36,7 @@ body {
 /* ── Stage ────────────────────────────────────────────── */
 
 .stage {
+  --dash-color: #4a6182;
   position: relative;
   flex: 1;
   min-width: 0;
@@ -43,16 +44,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(203,213,225,0.03);
-  border: 1px dashed #4a6182;
+  background-color: rgba(203,213,225,0.03);
+  /* Figma's dashed stroke (9px dash / 9px gap) has no exact CSS border-style
+     equivalent, so it's drawn as 4 gradient strips instead of `border`. Same
+     trick underlies the dot-grid texture fill (a tiled 4px circle @ 6%
+     opacity, spacing 2.1px — reproduced as a radial-gradient tile). */
+  background-image:
+    radial-gradient(circle, rgba(100,116,139,0.06) 2px, transparent 2px),
+    linear-gradient(90deg, var(--dash-color) 50%, transparent 0%),
+    linear-gradient(90deg, var(--dash-color) 50%, transparent 0%),
+    linear-gradient(0deg, var(--dash-color) 50%, transparent 0%),
+    linear-gradient(0deg, var(--dash-color) 50%, transparent 0%);
+  background-repeat: repeat, repeat-x, repeat-x, repeat-y, repeat-y;
+  background-size: 6.1px 6.1px, 18px 1px, 18px 1px, 1px 18px, 1px 18px;
+  background-position: 0 0, 0 0, 0 100%, 0 0, 100% 0;
   border-radius: 8px;
-  transition: border-color 0.15s, background 0.15s;
+  transition: background-color 0.15s;
   overflow: hidden;
 }
 
 .stage.dragging {
-  border-color: var(--accent);
-  background: rgba(37, 99, 235, 0.06);
+  --dash-color: var(--accent);
+  background-color: rgba(37, 99, 235, 0.06);
 }
 
 .stage.has-image { cursor: grab; }
